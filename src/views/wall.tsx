@@ -25,6 +25,12 @@ const Card: FC<{ r: WallRequest; t: T; lang: Lang; now: number }> = ({ r, t, lan
         <time datetime={new Date(r.publishedAt * 1000).toISOString()}>{t.ago(r.publishedAt, now)}</time>
         <span class="count">{t.count("prayed", r.prayedCount)}</span>
       </p>
+      <details class="menu">
+        <summary>{t("card_menu")}</summary>
+        <a href={`/${lang.code}/r/${r.id}/report`} rel="nofollow">
+          {t("report")}
+        </a>
+      </details>
     </article>
   </li>
 );

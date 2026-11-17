@@ -31,6 +31,7 @@ The form shows this notice when any of these is true:
 1. `MODE` in `wrangler.jsonc` is `closed`.
 2. `TURNSTILE_SITE_KEY` in `wrangler.jsonc` is empty.
 3. The Worker secret `TURNSTILE_SECRET` or `MASTER_SECRET` is missing.
+4. Nobody is moderating (see "Nobody is moderating" below).
 
 ### Set up the bot check (Turnstile), once
 
@@ -56,6 +57,52 @@ To see the reasons of recent posts (D1 console):
 `MASTER_SECRET` keys the daily visitor hashes and the duplicate check. The Deploy workflow creates it
 once with a random value that nobody sees. If it is ever lost or replaced, nothing breaks: today's
 posting limits and the duplicate check start again from zero, and private links keep working.
+
+## Moderation
+
+The queue is at `/mod`. It is not linked from the public site. It shows held requests and requests
+that visitors reported, crisis first, then reported, then oldest first. Every decision is written to
+the `mod_log` table with the moderator's sign-in address.
+
+### Set up moderator sign-in (Cloudflare Access), once
+
+Until this is done, `/mod` answers "not found".
+
+1. In the Cloudflare dashboard open Zero Trust and, if asked, choose a team name and the free plan.
+2. Access → Applications → Add an application → Self-hosted. Application domain: the site's hostname,
+   **path `mod`**. Do not protect the whole hostname, and do not use the one-click "Enable Cloudflare
+   Access" button on the Worker: that would put the public wall behind a sign-in.
+3. Add a policy that allows only the moderators' email addresses. One-time PIN sign-in needs no setup.
+4. From the application's overview copy the **AUD tag**, and note the team address
+   (`https://<team>.cloudflareaccess.com`). Neither is secret.
+5. Put them in `wrangler.jsonc` as `ACCESS_AUD` and `ACCESS_TEAM_DOMAIN`, and merge.
+
+The Worker checks the signed token on every `/mod` request itself, so a request that does not come
+through Access is refused.
+
+To add or remove a moderator, edit the policy in step 3. Nothing in the repository changes.
+
+### Alerts
+
+Set the Worker secret `ALERT_WEBHOOK_URL` to an incoming-webhook address of a private chat channel
+(Slack and Discord webhooks both work). Without it, alerts go nowhere. Alerts never contain request text.
+
+| Alert | Sent when | At most |
+| --- | --- | --- |
+| `queue_waiting` | 20 items are waiting, or any item is past its target time | Every 6 hours |
+| `unattended` | A held request has waited 48 hours and no moderator has acted in that time | Once a day |
+| `report_breaker` | More than 30 reports in 10 minutes, or one network tried to report more than 10 requests | Once per incident |
+
+### Nobody is moderating (`unattended`)
+
+When a held request has waited 48 hours and no moderator has decided anything in that time, posting
+pauses with the notice "Posting is paused for now". Reading continues. **Any decision in the queue
+reopens posting at once.**
+
+### The report breaker
+
+During unusual reporting, three reports no longer hide a request; they flag it in the queue while
+it stays on the wall. This ends by itself after 60 quiet minutes.
 
 ## Pause posting
 
@@ -94,7 +141,7 @@ service back on a fresh Cloudflare account:
 6. Check `/healthz`.
 
 Then set up the bot check as described above; the master secret is created by the deploy.
-Later milestones add steps here: Cloudflare Access.
+Then set up moderator sign-in and alerts as described under "Moderation".
 
 ## Who can act
 

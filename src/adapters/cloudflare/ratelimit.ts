@@ -20,4 +20,13 @@ export class D1RateLimiter implements RateLimiter {
       .first<{ count: number }>();
     return row?.count ?? 1;
   }
+
+  async peek(key: string, windowSeconds: number, now: number): Promise<number> {
+    const windowStart = Math.floor(now / windowSeconds) * windowSeconds;
+    const row = await this.d1
+      .prepare("SELECT count FROM rate_limits WHERE key = ? AND window_start = ?")
+      .bind(key, windowStart)
+      .first<{ count: number }>();
+    return row?.count ?? 0;
+  }
 }

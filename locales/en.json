@@ -294,5 +294,85 @@
   "form_country_hide": {
     "message": "Hide my country",
     "description": "Tick box under the detected country. Unticked by default; when ticked, no country is stored or shown."
+  },
+  "card_menu": {
+    "message": "More",
+    "description": "Label of the small menu on each card. It holds Report now; Show original joins it later."
+  },
+  "report": {
+    "message": "Report",
+    "description": "Menu entry on a card, and the title of the report page."
+  },
+  "report_title": {
+    "message": "Report this request",
+    "description": "Heading of the report page."
+  },
+  "report_why": {
+    "message": "What is wrong with it?",
+    "description": "Question above the list of reasons on the report page."
+  },
+  "report_spam": {
+    "message": "Spam or advertising",
+    "description": "Report reason."
+  },
+  "report_money": {
+    "message": "It asks for money",
+    "description": "Report reason."
+  },
+  "report_personal": {
+    "message": "It contains personal or contact details",
+    "description": "Report reason."
+  },
+  "report_hateful": {
+    "message": "It is hateful, harmful, or not suitable for all ages",
+    "description": "Report reason."
+  },
+  "report_other": {
+    "message": "Something else",
+    "description": "Report reason."
+  },
+  "report_send": {
+    "message": "Send report",
+    "description": "Button that files the report."
+  },
+  "report_thanks": {
+    "message": "Thank you. A moderator will look at it.",
+    "description": "Shown after a report is sent. Always the same, whatever happened to the report."
+  },
+  "report_gone": {
+    "message": "This request is no longer on the wall.",
+    "description": "Report page when the request cannot be found or is not on the wall."
+  },
+  "removed_contact": {
+    "message": "It contained contact details or a link.",
+    "description": "Private page: why a moderator removed the request."
+  },
+  "removed_money": {
+    "message": "It asked for money, gifts or business.",
+    "description": "Private page: why a moderator removed the request."
+  },
+  "removed_identifies": {
+    "message": "It could identify another person.",
+    "description": "Private page: why a moderator removed the request."
+  },
+  "removed_preaching": {
+    "message": "It preached, argued, or spoke against a person, group or faith.",
+    "description": "Private page: why a moderator removed the request."
+  },
+  "removed_harm": {
+    "message": "It asked for harm to someone.",
+    "description": "Private page: why a moderator removed the request."
+  },
+  "removed_unsuitable": {
+    "message": "It was not suitable for all ages.",
+    "description": "Private page: why a moderator removed the request."
+  },
+  "removed_not_prayer": {
+    "message": "It was not a prayer request.",
+    "description": "Private page: why a moderator removed the request."
+  },
+  "removed_spam": {
+    "message": "It was spam or a repeat.",
+    "description": "Private page: why a moderator removed the request."
   }
 }

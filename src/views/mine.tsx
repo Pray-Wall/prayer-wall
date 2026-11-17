@@ -82,6 +82,8 @@ export const MinePage: FC<{ lang: Lang; t: T; result: Found }> = ({ lang, t, res
       ) : null}
       <p class="notice" data-remember={token}>
         <strong>{t(`status_${result.status}`)}</strong>
+        {/* A removal's reason category is shown to the author. */}
+        {result.status === "removed" && r.removeReason && r.removeReason !== "other" ? ` ${t(`removed_${r.removeReason}`)}` : null}
       </p>
       {text}
       <p class="who">

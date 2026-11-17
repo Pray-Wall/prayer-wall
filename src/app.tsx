@@ -6,11 +6,16 @@ import { DEVICE_ID_PATTERN } from "./lib/hashes";
 import { DEFAULT_LANG, getLang, pickLang, translator, type Lang, type T } from "./lib/i18n";
 import { openMine, parseAction } from "./lib/mine";
 import { submitRequest, type Mode } from "./lib/posting";
-import type { BotCheck, RateLimiter } from "./lib/services";
+import type { Alerter, BotCheck, ModeratorAuth, RateLimiter } from "./lib/services";
+import type { ModAction } from "./lib/database";
+import { QUEUE_PAGE, decide, isUnattended } from "./lib/moderation";
+import { breakerActive, fileReport, isReportReason } from "./lib/reports";
 import { loadWall, parseView } from "./lib/wall";
 import { Confirmation, PostForm, PostingClosed, emptyForm, type FormValues } from "./views/form";
 import { Layout } from "./views/layout";
 import { MineEnter, MinePage } from "./views/mine";
+import { ModQueue, ModRemoved } from "./views/mod";
+import { ReportForm, ReportNote } from "./views/report";
 import { Wall } from "./views/wall";
 
 export type AppDeps = {
@@ -21,6 +26,9 @@ export type AppDeps = {
   /** Null when the master secret is not configured; posting and the private page are then paused. */
   masterSecret: string | null;
   mode: Mode;
+  /** Null when moderator sign-in is not configured; /mod then does not exist. */
+  moderatorAuth: ModeratorAuth | null;
+  alerter: Alerter;
   /** Link to the exact source of the running version (AGPL requirement). */
   sourceUrl: string;
   /** The visitor's network address. Used only to compute the daily visitor hash; never stored or logged. */
@@ -91,6 +99,56 @@ export function createApp(deps: AppDeps) {
     return c.json({ ok }, ok ? 200 : 503);
   });
 
+  const REQUEST_ID = /^[a-z2-7]{12}$/;
+
+  // ---- Moderators ----
+  // Registered before the /{lang} routes, so that "mod" is never taken for a language code.
+  // Behind Cloudflare Access. The Worker checks the sign-in itself on every request.
+
+  const moderator = async (c: Context): Promise<string | Response> => {
+    if (deps.moderatorAuth === null) return c.notFound();
+    const who = await deps.moderatorAuth.identify(c.req.raw);
+    c.header("Cache-Control", "no-store");
+    return who ?? c.text("Sign-in required.", 403);
+  };
+  const skipped = (value: string | undefined) => (value ?? "").split(",").filter((id) => REQUEST_ID.test(id)).slice(0, 50);
+  const english = { lang: getLang(DEFAULT_LANG)!, t: translator(DEFAULT_LANG) };
+
+  app.get("/mod", async (c) => {
+    const who = await moderator(c);
+    if (who instanceof Response) return who;
+    const o = { title: "Moderation", noindex: true, hideAsk: true };
+    if (c.req.query("view") === "removed") {
+      return page(c, english.lang, english.t, <ModRemoved items={await deps.db.listRemoved(50)} />, o);
+    }
+    const at = now();
+    const skip = skipped(c.req.query("skip"));
+    const [items, summary, unattended, breaker] = await Promise.all([
+      deps.db.listQueue(QUEUE_PAGE, skip),
+      deps.db.queueSummary(),
+      isUnattended(deps.db, at),
+      breakerActive(deps.db, at),
+    ]);
+    return page(
+      c, english.lang, english.t,
+      <ModQueue moderator={who} items={items} waiting={summary.waiting} now={at} skip={skip} unattended={unattended} breaker={breaker} />,
+      o,
+    );
+  });
+
+  app.post("/mod/r/:id/:action", async (c) => {
+    const who = await moderator(c);
+    if (who instanceof Response) return who;
+    if (!isSameOrigin(c.req.raw)) return c.text("This form was sent from somewhere else.", 403);
+    const id = c.req.param("id");
+    const action = c.req.param("action");
+    if (!REQUEST_ID.test(id) || !["publish", "remove", "restore", "escalate"].includes(action)) return c.notFound();
+    const form = await c.req.parseBody();
+    await decide({ db: deps.db, limiter: deps.limiter }, { id, action: action as ModAction, moderator: who, removeReason: field(form, "reason"), now: now() });
+    const skip = skipped(field(form, "skip"));
+    return c.redirect(action === "restore" ? "/mod?view=removed" : `/mod${skip.length ? `?skip=${skip.join(",")}` : ""}`, 303);
+  });
+
   app.get("/:lang", async (c) => {
     const l = await withLang(c);
     if (l instanceof Response) return l;
@@ -102,13 +160,15 @@ export function createApp(deps: AppDeps) {
 
   // ---- Ask for prayer ----
 
-  const postingOpen = () => deps.mode !== "closed" && deps.botCheck !== null && deps.masterSecret !== null;
+  // Posting pauses when it is closed, not configured, or when nobody is moderating (`unattended`).
+  const postingOpen = async () =>
+    deps.mode !== "closed" && deps.botCheck !== null && deps.masterSecret !== null && !(await isUnattended(deps.db, now()));
 
   app.get("/:lang/new", async (c) => {
     const l = await withLang(c);
     if (l instanceof Response) return l;
     const o = { title: l.t("ask_for_prayer"), hideAsk: true };
-    if (!postingOpen()) return page(c, l.lang, l.t, <PostingClosed lang={l.lang} t={l.t} />, o);
+    if (!(await postingOpen())) return page(c, l.lang, l.t, <PostingClosed lang={l.lang} t={l.t} />, o);
     return page(c, l.lang, l.t, <PostForm lang={l.lang} t={l.t} values={emptyForm()} country={deps.clientCountry(c.req.raw)} siteKey={deps.botCheck!.siteKey} />, { ...o, botCheck: true });
   });
 
@@ -117,7 +177,7 @@ export function createApp(deps: AppDeps) {
     if (l instanceof Response) return l;
     const { lang, t } = l;
     const o = { title: t("ask_for_prayer"), hideAsk: true, noindex: true };
-    if (!postingOpen()) return page(c, lang, t, <PostingClosed lang={lang} t={t} />, o);
+    if (!(await postingOpen())) return page(c, lang, t, <PostingClosed lang={lang} t={t} />, o);
 
     const form = await c.req.parseBody();
     const values: FormValues = {
@@ -179,6 +239,40 @@ export function createApp(deps: AppDeps) {
     if (result.state === "too_many") return page(c, lang, t, <MineEnter lang={lang} t={t} message="mine_too_many" />, { ...o, status: 429 });
     if (result.state === "not_found") return page(c, lang, t, <MineEnter lang={lang} t={t} message="mine_not_found" />, { ...o, status: 404 });
     return page(c, lang, t, <MinePage lang={lang} t={t} result={result} />, o);
+  });
+
+  // ---- Report a request ----
+
+  app.get("/:lang/r/:id/report", async (c) => {
+    const l = await withLang(c);
+    if (l instanceof Response) return l;
+    const id = c.req.param("id");
+    const o = { title: l.t("report"), noindex: true };
+    if (!REQUEST_ID.test(id) || !(await deps.db.isOnWall(id, now()))) {
+      return page(c, l.lang, l.t, <ReportNote lang={l.lang} t={l.t} message="report_gone" />, { ...o, status: 404 });
+    }
+    return page(c, l.lang, l.t, <ReportForm lang={l.lang} t={l.t} id={id} />, o);
+  });
+
+  app.post("/:lang/r/:id/report", async (c) => {
+    const l = await withLang(c);
+    if (l instanceof Response) return l;
+    const { lang, t } = l;
+    const id = c.req.param("id");
+    const o = { title: t("report"), noindex: true };
+    if (!isSameOrigin(c.req.raw)) return page(c, lang, t, <ReportNote lang={lang} t={t} message="err_origin" />, { ...o, status: 403 });
+    const form = await c.req.parseBody();
+    const reason = field(form, "reason");
+    if (REQUEST_ID.test(id) && isReportReason(reason) && deps.masterSecret !== null) {
+      const device = field(form, "device");
+      await fileReport(
+        { db: deps.db, limiter: deps.limiter, alerter: deps.alerter, masterSecret: deps.masterSecret },
+        { requestId: id, reason, ip: deps.clientIp(c.req.raw), deviceId: DEVICE_ID_PATTERN.test(device) ? device : null },
+        now(),
+      );
+    }
+    // Always the same answer, so nothing reveals whether the report counted.
+    return page(c, lang, t, <ReportNote lang={lang} t={t} message="report_thanks" />, o);
   });
 
   return app;

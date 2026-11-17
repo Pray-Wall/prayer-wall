@@ -229,5 +229,65 @@
   },
   "form_country_hide": {
     "message": "إخفاء بلدي"
+  },
+  "card_menu": {
+    "message": "المزيد من الخيارات"
+  },
+  "report": {
+    "message": "إبلاغ"
+  },
+  "report_title": {
+    "message": "الإبلاغ عن هذا الطلب"
+  },
+  "report_why": {
+    "message": "ما المشكلة فيه؟"
+  },
+  "report_spam": {
+    "message": "رسائل مزعجة أو إعلان"
+  },
+  "report_money": {
+    "message": "يطلب مالًا"
+  },
+  "report_personal": {
+    "message": "يحتوي على بيانات شخصية أو بيانات اتصال"
+  },
+  "report_hateful": {
+    "message": "يحضّ على الكراهية أو يؤذي أو لا يناسب جميع الأعمار"
+  },
+  "report_other": {
+    "message": "شيء آخر"
+  },
+  "report_send": {
+    "message": "إرسال البلاغ"
+  },
+  "report_thanks": {
+    "message": "شكرًا لك. سينظر فيه أحد المشرفين."
+  },
+  "report_gone": {
+    "message": "هذا الطلب لم يعد على الجدار."
+  },
+  "removed_contact": {
+    "message": "كان يحتوي على بيانات اتصال أو رابط."
+  },
+  "removed_money": {
+    "message": "كان يطلب مالًا أو هدايا أو تعاملًا تجاريًا."
+  },
+  "removed_identifies": {
+    "message": "كان يمكن أن يكشف هوية شخص آخر."
+  },
+  "removed_preaching": {
+    "message": "كان فيه وعظ أو جدال أو كلام ضد شخص أو جماعة أو دين."
+  },
+  "removed_harm": {
+    "message": "كان يطلب الأذى لأحد."
+  },
+  "removed_unsuitable": {
+    "message": "لم يكن مناسبًا لجميع الأعمار."
+  },
+  "removed_not_prayer": {
+    "message": "لم يكن طلب صلاة."
+  },
+  "removed_spam": {
+    "message": "كان رسالة مزعجة أو مكررة."
   }
 }
