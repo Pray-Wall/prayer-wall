@@ -7,6 +7,8 @@ export interface RateLimiter {
    * and returns the new count. Windows start at multiples of `windowSeconds`.
    */
   hit(key: string, windowSeconds: number, now: number): Promise<number>;
+  /** The current count for `key` in the window that contains `now`, without adding to it. */
+  peek(key: string, windowSeconds: number, now: number): Promise<number>;
 }
 
 /**
@@ -20,4 +22,16 @@ export interface BotCheck {
   readonly siteKey: string;
   /** Verifies the response the widget put in the form. See BotVerdict. */
   verify(response: string | undefined): Promise<BotVerdict>;
+}
+
+export interface ModeratorAuth {
+  /** The signed-in moderator's identity (an email address), or null when the request is not signed in. */
+  identify(request: Request): Promise<string | null>;
+}
+
+export type AlertKind = "queue_waiting" | "unattended" | "report_breaker";
+
+export interface Alerter {
+  /** Sends a short operational message to the moderators. It must never contain request text. */
+  send(kind: AlertKind, text: string): Promise<void>;
 }

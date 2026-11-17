@@ -4,3 +4,5 @@ TURNSTILE_SITE_KEY=1x00000000000000000000AA
 TURNSTILE_SECRET=1x0000000000000000000000000000000AA
 # Any value works locally. Production uses a random secret that nobody has seen (see docs/runbook.md).
 MASTER_SECRET=local-development-only
+# Signs you in to /mod on localhost only. Never set this in production.
+DEV_MODERATOR=dev@localhost

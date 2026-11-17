@@ -16,8 +16,13 @@ export const MASTER = "test-master-secret";
 export type TestApp = ReturnType<typeof testApp>;
 
 /** An app wired to the test database, with a clock, a network address and a bot check the test controls. */
-export function testApp(options: { mode?: Mode; configured?: boolean } = {}) {
-  const state = { now: NOW, ip: "203.0.113.7", bot: "pass" as BotVerdict, country: null as string | null };
+export function testApp(options: { mode?: Mode; configured?: boolean; noModeration?: boolean } = {}) {
+  const state = {
+    now: NOW, ip: "203.0.113.7", bot: "pass" as BotVerdict, country: null as string | null,
+    /** Who is signed in to /mod, or null. */
+    moderator: null as string | null,
+    alerts: [] as { kind: string; text: string }[],
+  };
   const configured = options.configured ?? true;
   const app = createApp({
     db: new D1DatabaseAdapter(d1),
@@ -25,6 +30,8 @@ export function testApp(options: { mode?: Mode; configured?: boolean } = {}) {
     botCheck: configured ? { siteKey: "test-site-key", verify: async () => state.bot } : null,
     masterSecret: configured ? MASTER : null,
     mode: options.mode ?? "review_all",
+    moderatorAuth: options.noModeration ? null : { identify: async () => state.moderator },
+    alerter: { send: async (kind, text) => void state.alerts.push({ kind, text }) },
     sourceUrl: "https://example.com/src",
     clientIp: () => state.ip,
     clientCountry: () => state.country,
@@ -93,7 +100,10 @@ export async function addRequest(s: Seed = {}): Promise<string> {
 }
 
 export async function clearRequests() {
-  await d1.batch([d1.prepare("DELETE FROM requests"), d1.prepare("DELETE FROM rate_limits")]);
+  await d1.batch([
+    d1.prepare("DELETE FROM requests"), d1.prepare("DELETE FROM rate_limits"), d1.prepare("DELETE FROM reports"),
+    d1.prepare("DELETE FROM mod_log"), d1.prepare("DELETE FROM counters"),
+  ]);
 }
 
 /** Request bodies in page order. */

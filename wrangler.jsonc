@@ -19,8 +19,13 @@
     "MODE": "review_all",
     // Public Turnstile site key. Posting stays paused until this and the secrets
     // TURNSTILE_SECRET and MASTER_SECRET are set (see docs/runbook.md).
-    "TURNSTILE_SITE_KEY": "0x4AAAAAAGEpdhxWLGYVsnFn"
+    "TURNSTILE_SITE_KEY": "0x4AAAAAAGEpdhxWLGYVsnFn",
+    // Cloudflare Access in front of /mod. Until both are set, /mod does not exist (see docs/runbook.md).
+    "ACCESS_TEAM_DOMAIN": "",
+    "ACCESS_AUD": ""
   },
+  // Queue checks for the moderators (src/index.ts, scheduled).
+  "triggers": { "crons": ["*/30 * * * *"] },
   "d1_databases": [
     {
       "binding": "DB",

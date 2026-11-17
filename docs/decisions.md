@@ -113,6 +113,34 @@ Accepted by the maintainer in the build prompt. The full text is in the blueprin
 | Does the part of a link after `#` survive copying and sharing on iOS and Android? | **Not verified.** It is standard browser behaviour, but the blueprint asks for a device test. The maintainer should post once from a phone, share the link to themselves, and open it. |
 | Is 10 ms of processor time enough once hashes are computed? | **Not reliably.** Live, over 24 hours with the country list in place: median 6.45 ms, 90th percentile 12.75 ms, 99th percentile 17.81 ms. The country list was removed in response; to be measured again. The site stays on the free plan until launch; the paid plan is decided at M7 from the new figures. |
 
+## 17 November 2026: Milestone 3
+
+| Topic | Decision | Why |
+| --- | --- | --- |
+| Queue tiers (was proposal P1) | **Built as Revision 2.2 says, not as the M3 acceptance line says.** There are no amber, red or black tiers, no posting cap and no automatic `closed`. One alert remains (20 items waiting, or any item past its target time). When nobody is moderating, the site enters `unattended`. | Changes 2 and 9, accepted by the maintainer, remove the tiers. The M3 line "seeding 60 and then 150 held items triggers the posting cap and then `closed`" is replaced by: a held request waiting 48 hours with no moderator action pauses posting, and the first decision reopens it. The M7 load-test row "Queue thresholds" needs the same rewrite. |
+| When `unattended` starts | A held request has waited more than 48 hours **and** no moderator has acted in the last 48 hours | The 2.2 text says "no moderator has acted for 48 hours". Taken literally, a quiet wall with an empty queue would pause itself. |
+| `unattended` before the classifier | Posting pauses with the usual kind notice | 2.2: "If the classifier has never passed its required level, `unattended` cannot publish anything, so posting pauses". The stricter auto-publishing and the revise prompt arrive with the classifier (M5). |
+| Report form | The card menu links to `/{lang}/r/{id}/report`, a page with five reasons that posts to the same address. There is no `/api/r/{id}/report`. | **Differs from the blueprint's API table.** It works without JavaScript and adds no script, and follows the blueprint's own rule that forms post to the address they were loaded from. |
+| Device rule for reports | Three different visitor hashes **and** three different devices; when the browser sends no device id, the visitor hash stands in for the device | Same fallback the blueprint gives for prayers |
+| After a moderator keeps a reported request | Its reports are deleted, the reporters each get one "rejected" mark for the day, and its place in "Newest" and its expiry are unchanged | Otherwise the next single report would pull it back again |
+| Report breaker | State is one number, the time the breaker ends, kept in the `counters` table | No new table |
+| Removal reasons | `contact`, `money`, `identifies`, `preaching`, `harm`, `unsuitable`, `not_prayer`, `spam`, `other`; the author sees one sentence per reason, and none for `other` | Mirrors the seven public rules |
+| Restore | `/mod?view=removed` lists removed requests with "Restore to the wall" | The API table has a restore action; a mistaken removal must be reversible |
+| Moderator identity | The email address in the Cloudflare Access token, verified by the Worker (signature, audience, issuer, expiry) | Access recommends that the application validate the token itself |
+| Alerts | An `Alerter` interface with a chat-webhook adapter; no alert contains request text | The blueprint says "alert" without naming a channel. **The maintainer still has to choose the channel.** |
+| Schedule | A cron trigger every 30 minutes runs the queue check | The hourly clean-up job is M4 |
+| New columns | `requests.queued_at`, `requests.escalated_by` (`migrations/0003_moderation.sql`) | The waiting time of a reported request starts when it is pulled back, not when it was posted |
+| Queue interface language | English only | Moderators' common language; the public pages stay localised |
+| Not built in M3 | English translation in the queue (M6); classifier result (M5); "mark as crisis" and the support panel (M5); `config/moderators.json` language routing (M6); the "could not review in time" notice after 14 days and deletion of old reports (the M4 clean-up job) | Each depends on a later milestone |
+
+### Assumptions verified for M3 (17 November 2026)
+
+| Assumption | Result |
+| --- | --- |
+| Is Cloudflare Access free for a small moderator team? | Reported as free for up to 50 users. **From third-party pages, not yet confirmed in the maintainer's own account**; confirm on the plan page during set-up. |
+| How does the signed-in identity reach the Worker? | Access adds a signed token in the `Cf-Access-Jwt-Assertion` header, and Cloudflare's docs say the Worker must still validate it. The Worker does. Source: Cloudflare One "Validate JWTs". |
+| Can Access protect only `/mod` on a `workers.dev` address? | **Not yet verified.** Cloudflare offers a one-click Access switch for a whole `workers.dev` address, which must not be used here. Path-only protection is to be confirmed during set-up; if it is not possible, moderation waits for the project's own domain. |
+
 ## Proposed, awaiting the maintainer's decision
 
 The accepted 2.2 changes conflict with four later passages. None affects M0. Each needs a yes or no
@@ -120,8 +148,8 @@ before the milestone named.
 
 | # | Conflict | Proposal | Needed by |
 | --- | --- | --- | --- |
-| P1 | Changes 2 and 9 remove the red and black queue tiers, but the M3 acceptance criteria and one M7 load test still test "60 then 150 held items: cap, then `closed`" | Rewrite both to test `unattended` mode; keep `closed` only as a mode the maintainer sets by hand | M3 |
 | P2 | The build prompt keeps the soft Turnstile challenge on prayers "off by default (or anomaly-only)", but change 9 removes the anomaly flag | Build it behind a configuration switch that is off, with no automatic trigger | M4 |
+| P7 | The blueprint's API table has `POST /api/r/{id}/report`; M3 uses a report page at `/{lang}/r/{id}/report` (see Milestone 3) | Keep the server-rendered page | M3 review |
 | P5 | The blueprint's API table has `POST /api/mine`; M2 posts the token to `/{lang}/mine` instead (see Milestone 2) | Keep the server-rendered form post | M2 review |
 | P6 | With no "Written in" list, the recorded language can be wrong (see Milestone 2) | Have the classifier return the detected language in the same call (M5) and store that; translation (M6) then uses it. Until M5, a moderator sees the text and nothing depends on the field. | M5 |
 | P3 | Change 6 makes `/r/{id}` the address to share; the API table lists `/{lang}/r/{id}` | `/r/{id}` redirects to `/{lang}/r/{id}`, which stays the rendered page | M4 |
