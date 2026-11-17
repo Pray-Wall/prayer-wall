@@ -1,11 +1,18 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import type { FC } from "hono/jsx";
-import { REQUEST_LANGS, countryOptions, type Lang, type T } from "../lib/i18n";
+import { REQUEST_LANGS, countryOptions, isCountry, type Lang, type T } from "../lib/i18n";
 import { MAX_BODY, MAX_NAME } from "../lib/rules";
 
 export type FormValues = { kind: string; name: string; body: string; lang: string; country: string };
 
-export const emptyForm = (lang: Lang): FormValues => ({ kind: "self", name: "", body: "", lang: lang.code, country: "" });
+/** A blank form. The country is pre-selected from the visitor's connection when it is a known country. */
+export const emptyForm = (lang: Lang, country: string | null = null): FormValues => ({
+  kind: "self",
+  name: "",
+  body: "",
+  lang: lang.code,
+  country: country && isCountry(country) ? country : "",
+});
 
 type Props = { lang: Lang; t: T; values: FormValues; error?: string; siteKey: string };
 

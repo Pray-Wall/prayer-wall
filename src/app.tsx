@@ -25,6 +25,11 @@ export type AppDeps = {
   sourceUrl: string;
   /** The visitor's network address. Used only to compute the daily visitor hash; never stored or logged. */
   clientIp: (request: Request) => string;
+  /**
+   * The visitor's country as the platform reports it (two-letter code), or null. Used only to
+   * pre-select the country on the posting form; stored only if the author submits the form with it.
+   */
+  clientCountry: (request: Request) => string | null;
   /** Current time in Unix seconds; injectable for tests. */
   now?: () => number;
 };
@@ -104,7 +109,7 @@ export function createApp(deps: AppDeps) {
     if (l instanceof Response) return l;
     const o = { title: l.t("ask_for_prayer"), hideAsk: true };
     if (!postingOpen()) return page(c, l.lang, l.t, <PostingClosed lang={l.lang} t={l.t} />, o);
-    return page(c, l.lang, l.t, <PostForm lang={l.lang} t={l.t} values={emptyForm(l.lang)} siteKey={deps.botCheck!.siteKey} />, { ...o, botCheck: true });
+    return page(c, l.lang, l.t, <PostForm lang={l.lang} t={l.t} values={emptyForm(l.lang, deps.clientCountry(c.req.raw))} siteKey={deps.botCheck!.siteKey} />, { ...o, botCheck: true });
   });
 
   app.post("/:lang/new", async (c) => {

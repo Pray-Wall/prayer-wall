@@ -15,15 +15,39 @@ describe("the posting form", () => {
   it("shows every field, the three rules and the bot check", async () => {
     const html = await (await testApp().request("/en/new")).text();
     for (const s of ["Who is this for?", "Myself", "Someone else", "An event or group", "First name (optional)", "Your request",
-      "Written in", "Where are you? (optional)", "No contact details or links.", "No requests for money.", "No preaching or arguing.",
+      "Written in", "Where are you?", "No contact details or links.", "No requests for money.", "No preaching or arguing.",
       'maxlength="500"', 'class="cf-turnstile" data-sitekey="test-site-key"', "challenges.cloudflare.com/turnstile"]) {
       expect(html).toContain(s);
     }
-    // "Written in" is preset to the interface language; the country is blank unless chosen.
+    // "Written in" is preset to the interface language; with no known country nothing is pre-selected.
     expect(html).toMatch(/<option value="en" lang="en" selected="">English<\/option>/);
     expect(html).toMatch(/<option value="">Prefer not to say<\/option>/);
     expect(html).not.toMatch(/<option value="[A-Z]{2}" selected/);
     expect(await (await testApp().request("/ar/new")).text()).toMatch(/<option value="ar" lang="ar" selected="">العربية<\/option>/);
+  });
+
+  it("pre-selects the visitor's country, with 'Prefer not to say' one tap away", async () => {
+    const app = testApp();
+    app.state.country = "ID";
+    const html = await (await app.request("/en/new")).text();
+    expect(html).toMatch(/<option value="ID" selected="">Indonesia<\/option>/);
+    expect(html).toMatch(/<select id="country"[^>]*><option value="">Prefer not to say<\/option>/);
+    expect(html.match(/<option value="[A-Z]{2}" selected/g)).toHaveLength(1);
+    // Codes that are not countries (Tor is "T1", unknown is "XX") pre-select nothing.
+    for (const code of ["T1", "XX", "", "id"]) {
+      app.state.country = code;
+      expect(await (await app.request("/en/new")).text()).not.toMatch(/<option value="[A-Z0-9]{2}" selected/);
+    }
+  });
+
+  it("stores no country when the author picks 'Prefer not to say', whatever was pre-selected", async () => {
+    const app = testApp();
+    app.state.country = "ID";
+    await app.post("/en/new", { ...VALID, country: "" });
+    expect((await stored())[0]!.country).toBeNull();
+    // A refused post keeps the author's choice, not the detected country.
+    const html = await (await app.post("/en/new", { ...VALID, country: "", body: "" })).text();
+    expect(html).not.toMatch(/<option value="[A-Z]{2}" selected/);
   });
 
   it("is paused, kindly, when closed or not configured", async () => {
