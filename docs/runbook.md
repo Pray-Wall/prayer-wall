@@ -40,6 +40,17 @@ The form shows this notice when any of these is true:
 3. Put the **secret key** in the Worker: Workers & Pages → `prayer-wall` → Settings → Variables and Secrets →
    Add → type Secret, name `TURNSTILE_SECRET`. Never put it in the repository.
 
+### The bot check is not running (`bot_check_misconfigured`)
+
+If held requests carry the reason `bot_check_misconfigured`, Cloudflare is rejecting the Worker's
+`TURNSTILE_SECRET`: it does not belong to the widget whose site key is in `wrangler.jsonc`. Authors
+see a normal confirmation and their posts are held, but **no bot check is happening**. Copy the
+secret key from Turnstile → the widget, and replace `TURNSTILE_SECRET` in the Worker's settings.
+The reason `bot_check_unavailable` means Cloudflare's verification service could not be reached.
+
+To see the reasons of recent posts (D1 console):
+`SELECT hold_reason, COUNT(*) FROM requests WHERE status = 'held' GROUP BY hold_reason`
+
 ### The master secret
 
 `MASTER_SECRET` keys the daily visitor hashes and the duplicate check. The Deploy workflow creates it

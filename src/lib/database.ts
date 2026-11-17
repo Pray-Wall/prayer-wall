@@ -33,7 +33,7 @@ export type ListPublishedOptions = {
 export type RequestStatus = "held" | "published" | "removed";
 
 /** Why a request is waiting for a moderator. */
-export type HoldReason = "review_all" | "soft_limit" | "duplicate" | "bot_check_unavailable";
+export type HoldReason = "review_all" | "soft_limit" | "duplicate" | "bot_check_unavailable" | "bot_check_misconfigured";
 
 export type NewRequest = {
   id: string;

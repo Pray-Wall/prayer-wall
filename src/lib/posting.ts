@@ -45,7 +45,7 @@ export type PostingDeps = {
 };
 
 export async function submitRequest(deps: PostingDeps, input: PostInput, now: number): Promise<PostResult> {
-  // 1. Bot check. If the service cannot be reached the post is held, not refused.
+  // 1. Bot check. If the service cannot be reached, or our own secret is wrong, the post is held, not refused.
   const verdict = await deps.botCheck.verify(input.botResponse);
   if (verdict === "fail") return { ok: false, error: "bot" };
 
@@ -76,9 +76,11 @@ export async function submitRequest(deps: PostingDeps, input: PostInput, now: nu
     ? "duplicate"
     : overSoftLimit
       ? "soft_limit"
-      : verdict === "unavailable"
-        ? "bot_check_unavailable"
-        : "review_all";
+      : verdict === "misconfigured"
+        ? "bot_check_misconfigured"
+        : verdict === "unavailable"
+          ? "bot_check_unavailable"
+          : "review_all";
 
   const token = newOwnerToken();
   const id = newRequestId();

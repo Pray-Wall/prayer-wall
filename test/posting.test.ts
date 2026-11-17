@@ -167,6 +167,13 @@ describe("a refused post", () => {
     expect((await stored())[0]).toMatchObject({ status: "held", hold_reason: "bot_check_unavailable" });
   });
 
+  it("is held under its own reason when our Turnstile secret is wrong, so the operator can see it", async () => {
+    const app = testApp();
+    app.state.bot = "misconfigured";
+    expect(await (await app.post("/en/new", VALID)).text()).toContain("Your request has been received");
+    expect((await stored())[0]).toMatchObject({ status: "held", hold_reason: "bot_check_misconfigured" });
+  });
+
   it("is refused when it comes from another site", async () => {
     const app = testApp();
     for (const headers of [{ "Sec-Fetch-Site": "cross-site" }, { Origin: "https://evil.example" }, {}]) {
@@ -280,7 +287,8 @@ describe("Turnstile adapter", () => {
     expect(await check(() => json({ success: false, "error-codes": ["invalid-input-response"] })).verify("widget-response")).toBe("fail");
     expect(await check(() => json({ success: false, "error-codes": ["timeout-or-duplicate"] })).verify("widget-response")).toBe("fail");
     expect(await check(() => json({ success: false, "error-codes": ["internal-error"] })).verify("widget-response")).toBe("unavailable");
-    expect(await check(() => json({ success: false, "error-codes": ["invalid-input-secret"] })).verify("widget-response")).toBe("unavailable");
+    expect(await check(() => json({ success: false, "error-codes": ["invalid-input-secret"] })).verify("widget-response")).toBe("misconfigured");
+    expect(await check(() => json({ success: false, "error-codes": ["missing-input-secret"] })).verify("widget-response")).toBe("misconfigured");
     expect(await check(() => json({}, 503)).verify("widget-response")).toBe("unavailable");
     expect(await check(() => { throw new Error("network"); }).verify("widget-response")).toBe("unavailable");
   });
