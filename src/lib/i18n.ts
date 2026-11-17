@@ -52,18 +52,6 @@ export function countryName(lang: string, code: string | null): string | null {
   return names.of(code) ?? code;
 }
 
-const countryLists = new Map<string, { code: string; name: string }[]>();
-/** Every country, sorted by its name in the interface language. */
-export function countryOptions(lang: string): { code: string; name: string }[] {
-  let list = countryLists.get(lang);
-  if (!list) {
-    const collator = new Intl.Collator(lang);
-    list = COUNTRY_CODES.map((code) => ({ code, name: countryName(lang, code)! })).sort((a, b) => collator.compare(a.name, b.name));
-    countryLists.set(lang, list);
-  }
-  return list;
-}
-
 const catalogs: Record<string, Catalog> = { en, ar };
 
 export function getLang(code: string): Lang | undefined {

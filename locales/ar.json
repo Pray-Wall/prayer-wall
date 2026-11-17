@@ -95,15 +95,6 @@
   "form_lang_other": {
     "message": "لغة أخرى"
   },
-  "form_country": {
-    "message": "أين أنت؟"
-  },
-  "form_country_none": {
-    "message": "أفضّل عدم الذكر"
-  },
-  "form_country_help": {
-    "message": "ملأنا هذا الحقل بحسب اتصالك. يمكنك تغييره أو اختيار «أفضّل عدم الذكر». يظهر البلد بجانب طلبك."
-  },
   "form_rules": {
     "message": "ثلاث قواعد قصيرة"
   },
@@ -238,5 +229,11 @@
   },
   "deleted_title": {
     "message": "تم حذف طلبك"
+  },
+  "form_country_note": {
+    "message": "سيظهر بلدك بجانب طلبك:"
+  },
+  "form_country_hide": {
+    "message": "إخفاء بلدي"
   }
 }
