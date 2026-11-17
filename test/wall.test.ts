@@ -13,6 +13,7 @@ describe("the wall page", () => {
     await addRequest({ body: "Please pray for my exam" });
     const html = await get("/en");
     expect(html).toContain("Please pray for my exam");
+    expect(html.startsWith("<!DOCTYPE html><html")).toBe(true);
     expect(html).not.toMatch(/<script/i);
     expect(html).not.toMatch(/<img/i);
   });

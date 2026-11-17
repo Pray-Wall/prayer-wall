@@ -44,11 +44,13 @@ export function createApp(deps: AppDeps) {
     const at = now();
     const page = await loadWall(deps.db, view, c.req.query("after"), at);
     const t = translator(lang.code);
-    return c.html(
+    const page_ = (
       <Layout lang={lang} t={t} sourceUrl={deps.sourceUrl}>
         <Wall lang={lang} t={t} view={view} page={page} now={at} />
-      </Layout>,
+      </Layout>
     );
+    // Without a doctype browsers fall back to quirks mode.
+    return c.html(`<!DOCTYPE html>${page_}`);
   });
 
   return app;
