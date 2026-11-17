@@ -1,16 +1,49 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { env } from "cloudflare:test";
 import { D1DatabaseAdapter } from "../src/adapters/cloudflare/d1";
+import { D1RateLimiter } from "../src/adapters/cloudflare/ratelimit";
 import { createApp } from "../src/app";
+import type { Mode } from "../src/lib/posting";
+import type { BotVerdict } from "../src/lib/services";
 
 export const d1 = (env as unknown as { DB: D1Database }).DB;
 export const NOW = 1_800_000_000;
 export const HOUR = 3600;
 export const DAY = 86400;
 
-/** An app wired to the test database with a fixed clock. */
-export function testApp() {
-  return createApp({ db: new D1DatabaseAdapter(d1), sourceUrl: "https://example.com/src", now: () => NOW });
+export const MASTER = "test-master-secret";
+
+export type TestApp = ReturnType<typeof testApp>;
+
+/** An app wired to the test database, with a clock, a network address and a bot check the test controls. */
+export function testApp(options: { mode?: Mode; configured?: boolean } = {}) {
+  const state = { now: NOW, ip: "203.0.113.7", bot: "pass" as BotVerdict };
+  const configured = options.configured ?? true;
+  const app = createApp({
+    db: new D1DatabaseAdapter(d1),
+    limiter: new D1RateLimiter(d1),
+    botCheck: configured ? { siteKey: "test-site-key", verify: async () => state.bot } : null,
+    masterSecret: configured ? MASTER : null,
+    mode: options.mode ?? "review_all",
+    sourceUrl: "https://example.com/src",
+    clientIp: () => state.ip,
+    now: () => state.now,
+  });
+  const post = (path: string, fields: Record<string, string>, headers: Record<string, string> = { "Sec-Fetch-Site": "same-origin" }) =>
+    app.request(path, { method: "POST", body: new URLSearchParams(fields), headers });
+  return Object.assign(app, { state, post });
+}
+
+/** Posts a valid request and returns the private token from the confirmation page. */
+export async function postRequest(app: TestApp, fields: Record<string, string> = {}) {
+  const res = await app.post("/en/new", { kind: "self", name: "", body: `Please pray for me ${++bodyCounter}`, lang: "en", country: "", ...fields });
+  const html = await res.text();
+  return { res, html, token: html.match(/data-remember="([0-9a-f]{32})"/)?.[1] };
+}
+let bodyCounter = 0;
+
+export async function rows<T = Record<string, unknown>>(sql: string, ...args: unknown[]): Promise<T[]> {
+  return (await d1.prepare(sql).bind(...args).all<T>()).results;
 }
 
 let counter = 0;
@@ -59,7 +92,7 @@ export async function addRequest(s: Seed = {}): Promise<string> {
 }
 
 export async function clearRequests() {
-  await d1.prepare("DELETE FROM requests").run();
+  await d1.batch([d1.prepare("DELETE FROM requests"), d1.prepare("DELETE FROM rate_limits")]);
 }
 
 /** Request bodies in page order. */

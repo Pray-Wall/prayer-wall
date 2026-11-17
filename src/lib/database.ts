@@ -7,6 +7,8 @@ export type WallRequest = {
   displayName: string | null;
   body: string;
   lang: string;
+  /** ISO country code the author chose, if any. */
+  country: string | null;
   prayedCount: number;
   reachCount: number;
   publishedAt: number;
@@ -28,6 +30,42 @@ export type ListPublishedOptions = {
   now: number;
 };
 
+export type RequestStatus = "held" | "published" | "removed";
+
+/** Why a request is waiting for a moderator. */
+export type HoldReason = "review_all" | "soft_limit" | "duplicate" | "bot_check_unavailable";
+
+export type NewRequest = {
+  id: string;
+  ownerHash: string;
+  kind: WallRequest["kind"];
+  displayName: string | null;
+  body: string;
+  lang: string;
+  country: string | null;
+  status: RequestStatus;
+  holdReason: HoldReason | null;
+  bodyHash: string;
+  posterHash: string;
+  createdAt: number;
+  expiresAt: number;
+};
+
+/** A request as its author sees it on the private page. */
+export type OwnRequest = {
+  id: string;
+  kind: WallRequest["kind"];
+  displayName: string | null;
+  body: string;
+  lang: string;
+  status: RequestStatus;
+  removeReason: string | null;
+  prayedCount: number;
+  answeredAt: number | null;
+  extended: boolean;
+  expiresAt: number;
+};
+
 /**
  * The app talks to storage only through this interface, so a self-hoster
  * can swap the Cloudflare adapter for another one (blueprint: "Rules for the code").
@@ -40,4 +78,15 @@ export interface Database {
   listPublished(options: ListPublishedOptions): Promise<WallRequest[]>;
   /** For each cutoff, how many published, unexpired, non-test requests were published at or after it. */
   countPublishedSince(cutoffs: number[], now: number): Promise<number[]>;
+
+  createRequest(request: NewRequest): Promise<void>;
+  /** How many requests with this text hash were created at or after `since`, whatever their status. */
+  countByBodyHash(bodyHash: string, since: number): Promise<number>;
+  findByOwnerHash(ownerHash: string): Promise<OwnRequest | null>;
+  /** Marks the request answered. False when there was nothing to change. */
+  markAnswered(ownerHash: string, now: number): Promise<boolean>;
+  /** Adds `seconds` to a published, unexpired request's life, once only. False when not allowed. */
+  extendOnce(ownerHash: string, seconds: number, now: number): Promise<boolean>;
+  /** A real delete, not a hidden flag. False when no such request exists. */
+  deleteByOwnerHash(ownerHash: string): Promise<boolean>;
 }

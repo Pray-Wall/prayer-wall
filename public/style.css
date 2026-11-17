@@ -29,8 +29,11 @@ a { color: var(--blue); }
 .skip:focus { position: static; display: inline-block; margin: 8px 16px; }
 
 .top { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 16px 8px; }
-.top h1 { margin: 0; font-size: 22px; font-weight: 600; }
-.top h1 a { color: var(--ink); text-decoration: none; }
+.brand { margin: 0; font-size: 22px; font-weight: 600; }
+.brand a { color: var(--ink); text-decoration: none; }
+.actions { display: flex; align-items: center; gap: 16px; }
+h1 { font-size: 28px; font-weight: 600; line-height: 1.25; margin-block: 16px; }
+.sr { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
 /* Tabs: text only, the active one underlined in blue */
 .tabs { display: flex; gap: 24px; border-block-end: 1px solid var(--line); margin-block-end: 16px; }
@@ -70,6 +73,20 @@ input, textarea, select {
 }
 input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 2px solid var(--blue); outline-offset: 0; }
 .error { color: var(--danger); }
+.stack { display: grid; gap: 24px; }
+.stack p, .notice p { margin: 0; }
+fieldset { border: 0; margin: 0; padding: 0; }
+legend { font-weight: 600; padding: 0; margin-block-end: 4px; }
+.choice { display: flex; align-items: center; gap: 8px; min-block-size: 44px; font-weight: 400; margin: 0; }
+.choice input { inline-size: 20px; block-size: 20px; min-block-size: 0; margin: 0; accent-color: var(--blue); }
+textarea { resize: vertical; font: 18px/1.6 var(--serif); }
+.help { color: var(--muted); font-size: 14px; margin-block: 4px 0 !important; }
+.rules { margin: 8px 0 0; padding-inline-start: 20px; }
+.buttons { display: flex; flex-wrap: wrap; gap: 12px; margin-block: 16px; }
+.danger { border-color: var(--danger); color: var(--danger); }
+.notice.stack { gap: 12px; }
+.notice + * , .notice + .card { margin-block-start: 16px; }
+[hidden] { display: none !important; }
 
 /* Notice: confirmations, the held state, the empty wall */
 .notice { background: var(--sky); border-radius: 12px; padding: 16px; margin: 0; }
