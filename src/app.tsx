@@ -26,8 +26,8 @@ export type AppDeps = {
   /** The visitor's network address. Used only to compute the daily visitor hash; never stored or logged. */
   clientIp: (request: Request) => string;
   /**
-   * The visitor's country as the platform reports it (two-letter code), or null. Used only to
-   * pre-select the country on the posting form; stored only if the author submits the form with it.
+   * The visitor's country as the platform reports it (two-letter code), or null. Shown on the
+   * posting form and stored with the request unless the author ticks "Hide my country".
    */
   clientCountry: (request: Request) => string | null;
   /** Current time in Unix seconds; injectable for tests. */
@@ -109,7 +109,7 @@ export function createApp(deps: AppDeps) {
     if (l instanceof Response) return l;
     const o = { title: l.t("ask_for_prayer"), hideAsk: true };
     if (!postingOpen()) return page(c, l.lang, l.t, <PostingClosed lang={l.lang} t={l.t} />, o);
-    return page(c, l.lang, l.t, <PostForm lang={l.lang} t={l.t} values={emptyForm(l.lang, deps.clientCountry(c.req.raw))} siteKey={deps.botCheck!.siteKey} />, { ...o, botCheck: true });
+    return page(c, l.lang, l.t, <PostForm lang={l.lang} t={l.t} values={emptyForm(l.lang)} country={deps.clientCountry(c.req.raw)} siteKey={deps.botCheck!.siteKey} />, { ...o, botCheck: true });
   });
 
   app.post("/:lang/new", async (c) => {
@@ -125,11 +125,11 @@ export function createApp(deps: AppDeps) {
       name: field(form, "name"),
       body: field(form, "body"),
       lang: field(form, "lang"),
-      country: field(form, "country"),
+      hideCountry: field(form, "hide_country") === "1",
     };
     // A refused post comes back with everything the author typed and one plain sentence.
     const refuse = (error: string, status: 403 | 422 | 429) =>
-      page(c, lang, t, <PostForm lang={lang} t={t} values={values} error={error} siteKey={deps.botCheck!.siteKey} />, { ...o, botCheck: true, status });
+      page(c, lang, t, <PostForm lang={lang} t={t} values={values} country={deps.clientCountry(c.req.raw)} error={error} siteKey={deps.botCheck!.siteKey} />, { ...o, botCheck: true, status });
 
     if (!isSameOrigin(c.req.raw)) return refuse("origin", 403);
     const device = field(form, "device");
@@ -137,6 +137,7 @@ export function createApp(deps: AppDeps) {
       { db: deps.db, limiter: deps.limiter, botCheck: deps.botCheck!, masterSecret: deps.masterSecret! },
       {
         ...values,
+        country: values.hideCountry ? "" : (deps.clientCountry(c.req.raw) ?? ""),
         deviceId: DEVICE_ID_PATTERN.test(device) ? device : null,
         botResponse: field(form, "cf-turnstile-response") || undefined,
         ip: deps.clientIp(c.req.raw),

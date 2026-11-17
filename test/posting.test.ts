@@ -6,7 +6,7 @@ import { DAY, HOUR, MASTER, NOW, bodies, clearRequests, postRequest, rows, testA
 
 beforeEach(clearRequests);
 
-const VALID = { kind: "other", name: "Grace", body: "Please pray for my mother Grace.", lang: "en", country: "ID" };
+const VALID = { kind: "other", name: "Grace", body: "Please pray for my mother Grace.", lang: "en" };
 type Row = { id: string; status: string; hold_reason: string; body: string; display_name: string | null; kind: string; lang: string;
   country: string | null; owner_hash: string; poster_hash: string; body_hash: string; created_at: number; expires_at: number; published_at: number | null };
 const stored = () => rows<Row>("SELECT * FROM requests ORDER BY created_at, rowid");
@@ -15,39 +15,45 @@ describe("the posting form", () => {
   it("shows every field, the three rules and the bot check", async () => {
     const html = await (await testApp().request("/en/new")).text();
     for (const s of ["Who is this for?", "Myself", "Someone else", "An event or group", "First name (optional)", "Your request",
-      "Written in", "Where are you?", "No contact details or links.", "No requests for money.", "No preaching or arguing.",
+      "Written in", "No contact details or links.", "No requests for money.", "No preaching or arguing.",
       'maxlength="500"', 'class="cf-turnstile" data-sitekey="test-site-key"', "challenges.cloudflare.com/turnstile"]) {
       expect(html).toContain(s);
     }
-    // "Written in" is preset to the interface language; with no known country nothing is pre-selected.
+    // "Written in" is preset to the interface language; with no known country nothing is said about one.
     expect(html).toMatch(/<option value="en" lang="en" selected="">English<\/option>/);
-    expect(html).toMatch(/<option value="">Prefer not to say<\/option>/);
-    expect(html).not.toMatch(/<option value="[A-Z]{2}" selected/);
+    expect(html).not.toContain("hide_country");
     expect(await (await testApp().request("/ar/new")).text()).toMatch(/<option value="ar" lang="ar" selected="">العربية<\/option>/);
   });
 
-  it("pre-selects the visitor's country, with 'Prefer not to say' one tap away", async () => {
+  it("shows the visitor's country with an unticked 'Hide my country' box", async () => {
     const app = testApp();
     app.state.country = "ID";
     const html = await (await app.request("/en/new")).text();
-    expect(html).toMatch(/<option value="ID" selected="">Indonesia<\/option>/);
-    expect(html).toMatch(/<select id="country"[^>]*><option value="">Prefer not to say<\/option>/);
-    expect(html.match(/<option value="[A-Z]{2}" selected/g)).toHaveLength(1);
-    // Codes that are not countries (Tor is "T1", unknown is "XX") pre-select nothing.
+    expect(html).toContain("Your request will show your country: <strong>Indonesia</strong>");
+    expect(html).toMatch(/<input type="checkbox" name="hide_country" value="1"\/> Hide my country/);
+    expect(await (await app.request("/ar/new")).text()).toContain("<strong>إندونيسيا</strong>");
+    // Codes that are not countries (Tor is "T1", unknown is "XX") show nothing.
     for (const code of ["T1", "XX", "", "id"]) {
       app.state.country = code;
-      expect(await (await app.request("/en/new")).text()).not.toMatch(/<option value="[A-Z0-9]{2}" selected/);
+      expect(await (await app.request("/en/new")).text()).not.toContain("hide_country");
     }
   });
 
-  it("stores no country when the author picks 'Prefer not to say', whatever was pre-selected", async () => {
+  it("stores the country unless the author hides it", async () => {
     const app = testApp();
     app.state.country = "ID";
-    await app.post("/en/new", { ...VALID, country: "" });
-    expect((await stored())[0]!.country).toBeNull();
-    // A refused post keeps the author's choice, not the detected country.
-    const html = await (await app.post("/en/new", { ...VALID, country: "", body: "" })).text();
-    expect(html).not.toMatch(/<option value="[A-Z]{2}" selected/);
+    await app.post("/en/new", VALID);
+    await app.post("/en/new", { ...VALID, body: "Another request.", hide_country: "1" });
+    // The form cannot name a country itself: only the connection's country, or nothing.
+    await app.post("/en/new", { ...VALID, body: "A third request.", country: "FR" });
+    expect((await stored()).map((r) => r.country)).toEqual(["ID", null, "ID"]);
+    // A refused post keeps the box ticked.
+    const html = await (await app.post("/en/new", { ...VALID, body: "", hide_country: "1" })).text();
+    expect(html).toMatch(/name="hide_country" value="1" checked=""/);
+    // Without a known country nothing is stored.
+    app.state.country = "T1";
+    await app.post("/en/new", { ...VALID, body: "A fourth request." });
+    expect((await stored()).at(-1)!.country).toBeNull();
   });
 
   it("is paused, kindly, when closed or not configured", async () => {
@@ -65,6 +71,7 @@ describe("the posting form", () => {
 describe("a valid post", () => {
   it("is held for review and answered with the confirmation and a private link", async () => {
     const app = testApp();
+    app.state.country = "ID";
     const res = await app.post("/en/new", VALID);
     expect(res.status).toBe(200);
     expect(res.headers.get("cache-control")).toBe("no-store");
@@ -98,12 +105,14 @@ describe("a valid post", () => {
 
   it("tidies the fields: trims, drops an empty name, and ignores unknown codes", async () => {
     const app = testApp();
-    await app.post("/en/new", { kind: "self", name: "   ", body: "  Please pray for me.  ", lang: "tlh", country: "Narnia" });
+    app.state.country = "Narnia";
+    await app.post("/en/new", { kind: "self", name: "   ", body: "  Please pray for me.  ", lang: "tlh" });
     expect((await stored())[0]).toMatchObject({ display_name: null, body: "Please pray for me.", lang: "und", country: null });
   });
 
-  it("shows the chosen country on the card once published, in the reader's language", async () => {
+  it("shows the country on the card once published, in the reader's language", async () => {
     const app = testApp();
+    app.state.country = "ID";
     await app.post("/en/new", VALID);
     await rows("UPDATE requests SET status = 'published', published_at = ?, expires_at = ?", NOW, NOW + 30 * DAY);
     expect(await (await app.request("/en")).text()).toContain("For someone else · <bdi>Grace</bdi> · Indonesia");
@@ -121,7 +130,7 @@ describe("a refused post", () => {
     ["too much", "a".repeat(501), "Your request is longer than 500 characters."],
   ])("with %s comes back with the reason and everything the author typed", async (_what, body, reason) => {
     const app = testApp();
-    const res = await app.post("/en/new", { ...VALID, body, name: "Grâce", lang: "fr", country: "FR" });
+    const res = await app.post("/en/new", { ...VALID, body, name: "Grâce", lang: "fr" });
     expect(res.status).toBe(422);
     const html = await res.text();
     expect(html).toContain("Please change one thing");
@@ -131,7 +140,6 @@ describe("a refused post", () => {
     expect(html).toContain('value="Grâce"');
     expect(html).toMatch(/<input type="radio" name="kind" value="other" checked=""/);
     expect(html).toMatch(/<option value="fr" lang="fr" selected="">/);
-    expect(html).toMatch(/<option value="FR" selected="">France<\/option>/);
     expect(await stored()).toEqual([]);
   });
 

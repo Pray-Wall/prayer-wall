@@ -37,7 +37,7 @@ export function testApp(options: { mode?: Mode; configured?: boolean } = {}) {
 
 /** Posts a valid request and returns the private token from the confirmation page. */
 export async function postRequest(app: TestApp, fields: Record<string, string> = {}) {
-  const res = await app.post("/en/new", { kind: "self", name: "", body: `Please pray for me ${++bodyCounter}`, lang: "en", country: "", ...fields });
+  const res = await app.post("/en/new", { kind: "self", name: "", body: `Please pray for me ${++bodyCounter}`, lang: "en", ...fields });
   const html = await res.text();
   return { res, html, token: html.match(/data-remember="([0-9a-f]{32})"/)?.[1] };
 }

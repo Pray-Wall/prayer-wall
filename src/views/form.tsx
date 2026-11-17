@@ -1,22 +1,16 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import type { FC } from "hono/jsx";
-import { REQUEST_LANGS, countryOptions, isCountry, type Lang, type T } from "../lib/i18n";
+import { REQUEST_LANGS, countryName, type Lang, type T } from "../lib/i18n";
 import { MAX_BODY, MAX_NAME } from "../lib/rules";
 
-export type FormValues = { kind: string; name: string; body: string; lang: string; country: string };
+export type FormValues = { kind: string; name: string; body: string; lang: string; hideCountry: boolean };
 
-/** A blank form. The country is pre-selected from the visitor's connection when it is a known country. */
-export const emptyForm = (lang: Lang, country: string | null = null): FormValues => ({
-  kind: "self",
-  name: "",
-  body: "",
-  lang: lang.code,
-  country: country && isCountry(country) ? country : "",
-});
+export const emptyForm = (lang: Lang): FormValues => ({ kind: "self", name: "", body: "", lang: lang.code, hideCountry: false });
 
-type Props = { lang: Lang; t: T; values: FormValues; error?: string; siteKey: string };
+/** `country` is the visitor's country as the platform reports it, or null when it is not known. */
+type Props = { lang: Lang; t: T; values: FormValues; country: string | null; error?: string; siteKey: string };
 
-export const PostForm: FC<Props> = ({ lang, t, values, error, siteKey }) => (
+export const PostForm: FC<Props> = ({ lang, t, values, country, error, siteKey }) => (
   <>
     <h1>{t("ask_for_prayer")}</h1>
     {error ? (
@@ -63,20 +57,16 @@ export const PostForm: FC<Props> = ({ lang, t, values, error, siteKey }) => (
           </option>
         </select>
       </div>
-      <div>
-        <label for="country">{t("form_country")}</label>
-        <select id="country" name="country" aria-describedby="country-help">
-          <option value="">{t("form_country_none")}</option>
-          {countryOptions(lang.code).map((c) => (
-            <option value={c.code} selected={values.country === c.code}>
-              {c.name}
-            </option>
-          ))}
-        </select>
-        <p class="help" id="country-help">
-          {t("form_country_help")}
-        </p>
-      </div>
+      {countryName(lang.code, country) ? (
+        <div>
+          <p>
+            {t("form_country_note")} <strong>{countryName(lang.code, country)}</strong>
+          </p>
+          <label class="choice">
+            <input type="checkbox" name="hide_country" value="1" checked={values.hideCountry} /> {t("form_country_hide")}
+          </label>
+        </div>
+      ) : null}
       <div class="notice">
         <strong>{t("form_rules")}</strong>
         <ul class="rules">
