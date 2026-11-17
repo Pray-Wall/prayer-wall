@@ -1,0 +1,19 @@
+# Loads invented sample requests into the live database. Before launch only; see docs/runbook.md.
+name: Seed sample data
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx wrangler d1 execute prayer-wall --remote --file seed/seed.sql --yes
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

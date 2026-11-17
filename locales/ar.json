@@ -1,0 +1,21 @@
+{
+  "app_name": { "message": "جدار الصلاة" },
+  "meta_description": { "message": "مكان لطلب الصلاة وللصلاة من أجل الآخرين." },
+  "skip_to_requests": { "message": "انتقل إلى الطلبات" },
+  "tabs_label": { "message": "ترتيب الطلبات" },
+  "tab_need": { "message": "بحاجة إلى صلاة" },
+  "tab_new": { "message": "الأحدث" },
+  "kind_self": { "message": "طلب شخصي" },
+  "kind_other": { "message": "من أجل شخص آخر" },
+  "kind_event": { "message": "من أجل مناسبة أو مجموعة" },
+  "prayed_none": { "message": "لم يُصلِّ أحد بعد" },
+  "prayed_one": { "message": "صلاة واحدة" },
+  "prayed_two": { "message": "صلاتان" },
+  "prayed_few": { "message": "{n} صلوات" },
+  "prayed_many": { "message": "{n} صلاة" },
+  "prayed_other": { "message": "{n} صلاة" },
+  "more": { "message": "المزيد" },
+  "empty": { "message": "لا توجد طلبات هنا بعد." },
+  "language": { "message": "اللغة" },
+  "source_code": { "message": "الشفرة المصدرية" }
+}

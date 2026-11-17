@@ -60,6 +60,29 @@ Accepted by the maintainer in the build prompt. The full text is in the blueprin
 | D1 location options | Jurisdictions (EU, US, FedRAMP), fixed at creation; or a location hint (six regions) that is a preference, not a guarantee. Source: Cloudflare D1 "Data location" docs. |
 | D1 point-in-time recovery window | 7 days on the free plan, 30 days on the paid plan. Source: Cloudflare D1 "Limits" docs. Matches the blueprint. |
 
+## 17 November 2026: Milestone 1
+
+| Topic | Decision | Why |
+| --- | --- | --- |
+| "Needs prayer" in M1 | Plain ordering by reach, oldest first on ties, with the 7 / 14 / 30-day widening | The shuffle and edge cache are M4 work; the three-source page needs translations (M6). Until then the page is the neediest 20. |
+| Paging cursor | `(reach_count, published_at, id)` for "Needs prayer"; `(published_at, id)` for "Newest" | The blueprint's cursor used `prayed_count`; Revision 2 moved ordering to reach, so the cursor follows the sort key |
+| Card in M1 | Shows the prayer count as text. No "I prayed" button, no menu, no "Ask for prayer" link | Those arrive with the features behind them (M2, M3, M4, M6); a control that does nothing would mislead |
+| Card label wording | "Personal request", "For someone else", "For an event or group" | The form's "Myself" reads wrongly on a card seen by someone else |
+| New design token | `--on-blue`: white in light mode, `#0B1730` in dark mode | White text on the dark-mode blue (`#8FB4F2`) fails contrast |
+| Interface text format | `{ "key": { "message", "description" } }` per language | JSON has no comments; this keeps the explanation of each phrase beside it and is a format translation tools read |
+| Plurals and "time ago" | The runtime's built-in plural rules and relative-time formatting | No hand-written plural logic per language; Arabic needs six forms |
+| Unknown language code | `/xx` redirects to `/en` | Blueprint: unknown codes fall back to English |
+| Static files | Served by Workers static assets from `public/` | Blueprint choice; the Worker is not invoked for them |
+| Sample data | 40 invented requests in 12 languages, loaded into the live database by a hand-run workflow | Lets the wall be checked where it runs. **Must be deleted before any real person posts** (see runbook). |
+| Arabic interface text | Drafted by the builder, **not yet reviewed by a native speaker** | Needed to build and test right-to-left; the go-live checklist still applies |
+
+### Assumptions verified for M1 (17 November 2026)
+
+| Assumption | Result |
+| --- | --- |
+| Every colour pair meets 4.5:1, including the dark column | Yes, all 22 pairs; lowest is muted text on the page background in light mode at 5.07. `node scripts/contrast.mjs` re-checks. |
+| The wall transfers under 50 KB, under 10 KB of JavaScript, no images | About 4 KB compressed (12.7 KB uncompressed) for 20 cards plus the stylesheet; no JavaScript; no images |
+
 ## Proposed, awaiting the maintainer's decision
 
 The accepted 2.2 changes conflict with four later passages. None affects M0. Each needs a yes or no
