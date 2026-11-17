@@ -9,11 +9,15 @@ export interface RateLimiter {
   hit(key: string, windowSeconds: number, now: number): Promise<number>;
 }
 
-export type BotVerdict = "pass" | "fail" | "unavailable";
+/**
+ * "unavailable": the service could not be reached. "misconfigured": it answered that our own
+ * secret is wrong. Neither is the visitor's fault, so the post is held, not refused.
+ */
+export type BotVerdict = "pass" | "fail" | "unavailable" | "misconfigured";
 
 export interface BotCheck {
   /** Public key for the widget on the posting form. */
   readonly siteKey: string;
-  /** Verifies the response the widget put in the form. "unavailable" when the service cannot be reached. */
+  /** Verifies the response the widget put in the form. See BotVerdict. */
   verify(response: string | undefined): Promise<BotVerdict>;
 }

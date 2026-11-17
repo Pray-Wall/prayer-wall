@@ -93,7 +93,7 @@ Accepted by the maintainer in the build prompt. The full text is in the blueprin
 | Delete | "Delete now" shows a confirmation step, then deletes the row | A single tap must not be able to destroy a request; works with JavaScript off |
 | Order of checks on a post | Bot check, then fixed text rules, then limits, then the duplicate check | A post refused for a fixable reason (a phone number, too long) does not use up the author's daily allowance |
 | Same-origin check | `Sec-Fetch-Site: same-origin` first; a matching `Origin` only when that header is absent | Pages served with `Referrer-Policy: no-referrer` (planned for M7) send `Origin: null` on their own form posts |
-| Hold reasons | `review_all`, `soft_limit`, `duplicate`, `bot_check_unavailable`; the most specific one is recorded | Tells the moderator why a request is in the queue |
+| Hold reasons | `review_all`, `soft_limit`, `duplicate`, `bot_check_unavailable`, `bot_check_misconfigured` (our Turnstile secret is wrong; added after the first live test showed that case failing silently); the most specific one is recorded | Tells the moderator why a request is in the queue |
 | Held requests | `expires_at` is 14 days after posting until a moderator publishes | Blueprint: an unreviewed held request is deleted after 14 days |
 | "Written in" | The twelve proposed launch languages plus "Another language" (`und`) | The list of launch languages is still an open question; this is the blueprint's proposal |
 | Posting when not configured | The form is replaced by "Posting is paused for now" until the Turnstile keys and the master secret exist | Fails closed: posting never runs without the bot check |

@@ -22,9 +22,10 @@ export class TurnstileBotCheck implements BotCheck {
       if (!res.ok) return "unavailable";
       const data = (await res.json()) as { success?: boolean; "error-codes"?: string[] };
       if (data.success === true) return "pass";
-      // A problem on our side or theirs is not the visitor's fault.
       const codes = data["error-codes"] ?? [];
-      return codes.some((c) => c === "internal-error" || c.includes("secret")) ? "unavailable" : "fail";
+      // Our secret is missing or wrong: the check is not running at all, and the operator must find out.
+      if (codes.some((c) => c.includes("secret"))) return "misconfigured";
+      return codes.includes("internal-error") ? "unavailable" : "fail";
     } catch {
       return "unavailable";
     }
