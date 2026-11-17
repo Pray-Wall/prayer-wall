@@ -17,7 +17,7 @@ export type TestApp = ReturnType<typeof testApp>;
 
 /** An app wired to the test database, with a clock, a network address and a bot check the test controls. */
 export function testApp(options: { mode?: Mode; configured?: boolean } = {}) {
-  const state = { now: NOW, ip: "203.0.113.7", bot: "pass" as BotVerdict };
+  const state = { now: NOW, ip: "203.0.113.7", bot: "pass" as BotVerdict, country: null as string | null };
   const configured = options.configured ?? true;
   const app = createApp({
     db: new D1DatabaseAdapter(d1),
@@ -27,6 +27,7 @@ export function testApp(options: { mode?: Mode; configured?: boolean } = {}) {
     mode: options.mode ?? "review_all",
     sourceUrl: "https://example.com/src",
     clientIp: () => state.ip,
+    clientCountry: () => state.country,
     now: () => state.now,
   });
   const post = (path: string, fields: Record<string, string>, headers: Record<string, string> = { "Sec-Fetch-Site": "same-origin" }) =>

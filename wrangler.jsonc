@@ -19,7 +19,7 @@
     "MODE": "review_all",
     // Public Turnstile site key. Posting stays paused until this and the secrets
     // TURNSTILE_SECRET and MASTER_SECRET are set (see docs/runbook.md).
-    "TURNSTILE_SITE_KEY": "0x4AAAAAAGEo_B8LVKSQEFb7"
+    "TURNSTILE_SITE_KEY": "0x4AAAAAAGEpdhxWLGYVsnFn"
   },
   "d1_databases": [
     {

@@ -116,15 +116,15 @@
     "description": "Last entry of the 'Written in' list."
   },
   "form_country": {
-    "message": "Where are you? (optional)",
-    "description": "Label of the optional country list. The author chooses; nothing is detected."
+    "message": "Where are you?",
+    "description": "Label of the country list. It is pre-selected from the visitor's connection; the author can change it or choose not to say."
   },
   "form_country_none": {
     "message": "Prefer not to say",
     "description": "First entry of the country list; the default."
   },
   "form_country_help": {
-    "message": "If you choose a country, it is shown beside your request.",
+    "message": "We filled this in from your connection. You can change it or choose “Prefer not to say”. It is shown beside your request.",
     "description": "Helper text under the country list."
   },
   "form_rules": {

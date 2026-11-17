@@ -37,6 +37,10 @@ export default {
       sourceUrl: sourceUrl(env),
       // Cloudflare sets this header itself; a visitor cannot forge it.
       clientIp: (req) => req.headers.get("CF-Connecting-IP") ?? "unknown",
+      clientCountry: (req) => {
+        const country = (req as Request<unknown, IncomingRequestCfProperties>).cf?.country;
+        return typeof country === "string" ? country : null;
+      },
     });
     return app.fetch(request, env, ctx);
   },
