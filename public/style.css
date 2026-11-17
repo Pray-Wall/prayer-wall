@@ -1,0 +1,81 @@
+/* SPDX-License-Identifier: AGPL-3.0-or-later */
+/* Design tokens: blueprint "Design system". --on-blue is added for text on a solid blue button. */
+:root {
+  color-scheme: light dark;
+  --paper: #fff; --mist: #f5f8fc; --ink: #14213d; --muted: #5b6b85;
+  --blue: #1f4e9c; --on-blue: #fff; --sky: #dce9f9; --gold: #c9a227; --gold-ink: #8a6a00;
+  --line: #e3e9f2; --danger: #a4262c;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", sans-serif;
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #132243; --mist: #0b1730; --ink: #eef3fb; --muted: #a9b8d0;
+    --blue: #8fb4f2; --on-blue: #0b1730; --sky: #1c3261; --gold: #e3c567; --gold-ink: #e3c567;
+    --line: #24386b; --danger: #f2a5a9;
+  }
+}
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--mist); color: var(--ink);
+  font: 16px/1.5 var(--sans);
+  border-block-start: 2px solid var(--gold); /* the only ornament */
+}
+.top, main, .foot { max-inline-size: 640px; margin-inline: auto; padding-inline: 16px; }
+a { color: var(--blue); }
+:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; border-radius: 4px; }
+.skip { position: absolute; inset-inline-start: -999em; }
+.skip:focus { position: static; display: inline-block; margin: 8px 16px; }
+
+.top { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 16px 8px; }
+.top h1 { margin: 0; font-size: 22px; font-weight: 600; }
+.top h1 a { color: var(--ink); text-decoration: none; }
+
+/* Tabs: text only, the active one underlined in blue */
+.tabs { display: flex; gap: 24px; border-block-end: 1px solid var(--line); margin-block-end: 16px; }
+.tabs a {
+  display: inline-flex; align-items: center; min-block-size: 44px;
+  color: var(--muted); text-decoration: none; border-block-end: 2px solid transparent; margin-block-end: -1px;
+}
+.tabs a[aria-current] { color: var(--ink); font-weight: 600; border-block-end-color: var(--blue); }
+
+/* Request card */
+.wall { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.card { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+.card p { margin: 0; }
+.who, .row { color: var(--muted); font-size: 14px; }
+.text { font: 18px/1.6 var(--serif); margin-block: 8px 12px !important; overflow-wrap: anywhere; white-space: pre-line; }
+.row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+
+/* Buttons: fully rounded, at least 44px tall */
+.btn, .btn-primary, .prayed {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-block-size: 44px; padding-inline: 20px; border-radius: 999px;
+  font: inherit; font-weight: 600; text-decoration: none; cursor: pointer;
+  border: 1px solid var(--blue); background: transparent; color: var(--blue);
+}
+.btn-primary { background: var(--blue); color: var(--on-blue); }
+.prayed { transition: background-color 200ms; }
+.prayed[aria-pressed="true"] { background: var(--sky); border-color: var(--sky); color: var(--ink); }
+.prayed[aria-pressed="true"]::before { content: ""; inline-size: 8px; block-size: 8px; border-radius: 50%; background: var(--gold); }
+@media (prefers-reduced-motion: reduce) { .prayed { transition: none; } }
+.more { text-align: center; margin-block: 24px; }
+
+/* Form fields: label always visible above the field */
+label { display: block; font-weight: 600; margin-block-end: 4px; }
+input, textarea, select {
+  inline-size: 100%; min-block-size: 44px; padding: 8px 12px; font: inherit; color: var(--ink);
+  background: var(--paper); border: 1px solid var(--line); border-radius: 8px;
+}
+input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 2px solid var(--blue); outline-offset: 0; }
+.error { color: var(--danger); }
+
+/* Notice: confirmations, the held state, the empty wall */
+.notice { background: var(--sky); border-radius: 12px; padding: 16px; margin: 0; }
+
+.foot { margin-block-start: 48px; padding-block: 24px 32px; border-block-start: 1px solid var(--line); color: var(--muted); font-size: 14px; }
+.foot p { margin-block: 12px 0; }
+.foot a { display: inline-block; padding-block: 12px; }
+.langs { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 24px; }
+.langs a[aria-current] { color: var(--ink); font-weight: 600; text-decoration: none; }

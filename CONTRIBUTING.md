@@ -31,8 +31,8 @@ keep it small.
 
 ## Adding or fixing a language
 
-Interface text will live in `locales/`, one JSON file per language, with English as the source
-(this arrives in milestone 1). To fix wording, open a pull request or a "Language" issue.
+Interface text lives in `locales/`, one JSON file per language, with English as the source
+(see `locales/README.md`). To fix wording, open a pull request or a "Language" issue.
 A new language goes live only after a native speaker has reviewed it in context and it has passed
 the quality gate described in the blueprint.
 

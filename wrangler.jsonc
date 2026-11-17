@@ -7,6 +7,8 @@
   "main": "src/index.ts",
   "compatibility_date": "2026-11-01",
   "workers_dev": true,
+  // style.css and other static files; served without invoking the Worker.
+  "assets": { "directory": "./public" },
   // Logs stay off: the privacy design keeps network addresses out of logs.
   "observability": { "enabled": false },
   "vars": {

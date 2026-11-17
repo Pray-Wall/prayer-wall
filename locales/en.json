@@ -1,0 +1,18 @@
+{
+  "app_name": { "message": "Prayer Wall", "description": "The working name of the site, shown in the header and the browser tab." },
+  "meta_description": { "message": "A place to ask for prayer and to pray for others.", "description": "Short description for search engines and link previews. Never contains request text." },
+  "skip_to_requests": { "message": "Skip to the requests", "description": "Hidden link for keyboard and screen-reader users that jumps past the header." },
+  "tabs_label": { "message": "Order of requests", "description": "Screen-reader name for the two tabs that choose the ordering." },
+  "tab_need": { "message": "Needs prayer", "description": "Tab: requests with the fewest prayers first. The default view." },
+  "tab_new": { "message": "Newest", "description": "Tab: most recently published requests first." },
+  "kind_self": { "message": "Personal request", "description": "Card label: the author asks for prayer for themselves." },
+  "kind_other": { "message": "For someone else", "description": "Card label: the author asks for prayer for another person." },
+  "kind_event": { "message": "For an event or group", "description": "Card label: the request is for an event or a group of people." },
+  "prayed_none": { "message": "No prayers yet", "description": "Shown on a card nobody has prayed for yet." },
+  "prayed_one": { "message": "Prayed once", "description": "Prayer count on a card, plural form 'one'. Languages may also define prayed_zero, prayed_two, prayed_few, prayed_many." },
+  "prayed_other": { "message": "Prayed {n} times", "description": "Prayer count on a card, general plural form. {n} is the number." },
+  "more": { "message": "More", "description": "Link at the bottom of the wall that loads the next 20 requests." },
+  "empty": { "message": "There are no requests here yet.", "description": "Shown when the wall has nothing to show." },
+  "language": { "message": "Language", "description": "Heading of the language list in the footer." },
+  "source_code": { "message": "Source code", "description": "Footer link to the source code of the running version." }
+}

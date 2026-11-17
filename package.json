@@ -5,12 +5,17 @@
   "description": "A minimal, account-free prayer wall where anyone can ask for prayer and anyone can pray, each in their own language.",
   "license": "AGPL-3.0-or-later",
   "type": "module",
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "wrangler dev",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "deploy": "wrangler deploy"
+    "deploy": "wrangler deploy",
+    "seed:make": "node scripts/make-seed.mjs",
+    "db:migrate:local": "wrangler d1 migrations apply prayer-wall --local",
+    "db:seed:local": "wrangler d1 execute prayer-wall --local --file seed/seed.sql"
   },
   "dependencies": {
     "hono": "^4.13.18"

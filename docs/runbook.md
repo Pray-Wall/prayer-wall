@@ -23,6 +23,19 @@ Open `/healthz`. It returns `{"ok":true}` with status 200 when the database answ
 3. If `wrangler deploy` failed with an authentication error, the API token has expired or been revoked:
    create a new one (below) and update the `CLOUDFLARE_API_TOKEN` secret.
 
+## Database changes
+
+Schema changes are numbered SQL files in `migrations/`. The Deploy workflow applies any new ones
+before it deploys the code. Never edit a migration that has already been applied; add a new one.
+
+## Sample data (before launch only)
+
+The workflow "Seed sample data" (Actions tab, run by hand) loads 40 invented requests into the live
+database, replacing any earlier sample rows. They are marked with `poster_hash = 'seed'`.
+**Before any real person posts**, remove them:
+`npx wrangler d1 execute prayer-wall --remote --command "DELETE FROM requests WHERE poster_hash = 'seed'"`,
+then delete the workflow.
+
 ## Roll back a bad deploy
 
 Either revert the commit on `main` (the revert deploys by itself), or in the Cloudflare dashboard open
@@ -39,10 +52,10 @@ service back on a fresh Cloudflare account:
 3. Create a Cloudflare API token from the "Edit Cloudflare Workers" template, remove its Zone policy,
    add D1 → Edit to the Account policy, and limit it to the account.
 4. Set the GitHub secret `CLOUDFLARE_API_TOKEN`.
-5. Merge to `main`, or re-run the Deploy workflow.
+5. Merge to `main`, or re-run the Deploy workflow. It applies the migrations to the empty database.
 6. Check `/healthz`.
 
-Later milestones add steps here: applying migrations, the master secret, Turnstile keys, Cloudflare Access.
+Later milestones add steps here: the master secret, Turnstile keys, Cloudflare Access.
 
 ## Who can act
 

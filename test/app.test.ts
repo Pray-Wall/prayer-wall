@@ -3,19 +3,35 @@ import { SELF } from "cloudflare:test";
 import { describe, expect, it } from "vitest";
 import { createApp } from "../src/app";
 import { sourceUrl } from "../src/index";
+import { testApp } from "./helpers";
 
-describe("home page", () => {
-  it("says Prayer Wall", async () => {
-    const res = await SELF.fetch("https://example.com/");
+describe("root", () => {
+  it("redirects to the browser's language", async () => {
+    const res = await SELF.fetch("https://example.com/", { redirect: "manual", headers: { "Accept-Language": "ar-EG,ar;q=0.9,en;q=0.8" } });
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe("/ar");
+    expect(res.headers.get("vary")).toContain("Accept-Language");
+  });
+
+  it("falls back to English for an unsupported or missing language", async () => {
+    const app = testApp();
+    expect((await app.request("/", { headers: { "Accept-Language": "xx, yy;q=0.5" } })).headers.get("location")).toBe("/en");
+    expect((await app.request("/")).headers.get("location")).toBe("/en");
+  });
+
+  it("respects quality weights", async () => {
+    const res = await testApp().request("/", { headers: { "Accept-Language": "en;q=0.3, ar;q=0.9" } });
+    expect(res.headers.get("location")).toBe("/ar");
+  });
+});
+
+describe("the deployed worker", () => {
+  it("serves the wall and the stylesheet", async () => {
+    const res = await SELF.fetch("https://example.com/en");
     expect(res.status).toBe(200);
     expect(res.headers.get("content-type")).toContain("text/html");
     const html = await res.text();
-    expect(html).toContain("<h1>Prayer Wall</h1>");
-    expect(html).toContain('lang="en"');
-  });
-
-  it("links to the source code", async () => {
-    const html = await (await SELF.fetch("https://example.com/")).text();
+    expect(html).toContain("Prayer Wall");
     expect(html).toContain('href="https://github.com/Pray-Wall/prayer-wall"');
   });
 });
@@ -29,8 +45,8 @@ describe("/healthz", () => {
   });
 
   it("returns 503 when the database does not answer", async () => {
-    const app = createApp({ db: { ping: async () => false }, sourceUrl: "x" });
-    const res = await app.request("/healthz");
+    const db = { ping: async () => false, listPublished: async () => [], countPublishedSince: async () => [] };
+    const res = await createApp({ db, sourceUrl: "x" }).request("/healthz");
     expect(res.status).toBe(503);
     expect(await res.json()).toEqual({ ok: false });
   });
@@ -47,8 +63,13 @@ describe("sourceUrl", () => {
 });
 
 describe("unknown paths", () => {
-  it("return 404", async () => {
-    const res = await SELF.fetch("https://example.com/nope");
-    expect(res.status).toBe(404);
+  it("an unknown language code falls back to English, keeping the query", async () => {
+    const res = await testApp().request("/de?view=new");
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe("/en?view=new");
+  });
+  it("anything else is a 404", async () => {
+    expect((await testApp().request("/not-a-language-code")).status).toBe(404);
+    expect((await testApp().request("/en/nope")).status).toBe(404);
   });
 });
