@@ -13,23 +13,6 @@ export const LANGS: readonly Lang[] = [
 ];
 export const DEFAULT_LANG = "en";
 
-/** Languages a request may be written in (the proposed launch list), each named in its own language. */
-export const REQUEST_LANGS: readonly { code: string; name: string }[] = [
-  { code: "en", name: "English" },
-  { code: "es", name: "Español" },
-  { code: "pt", name: "Português" },
-  { code: "fr", name: "Français" },
-  { code: "ru", name: "Русский" },
-  { code: "uk", name: "Українська" },
-  { code: "id", name: "Bahasa Indonesia" },
-  { code: "ar", name: "العربية" },
-  { code: "he", name: "עברית" },
-  { code: "hi", name: "हिन्दी" },
-  { code: "ko", name: "한국어" },
-  { code: "zh", name: "中文" },
-];
-export const isRequestLang = (code: string) => REQUEST_LANGS.some((l) => l.code === code);
-
 // ISO 3166-1 alpha-2, plus XK. The author may choose one; it is never derived from the network address.
 const COUNTRY_CODES = (
   "AD AE AF AG AI AL AM AO AR AS AT AU AW AX AZ BA BB BD BE BF BG BH BI BJ BL BM BN BO BQ BR BS BT BW BY BZ " +

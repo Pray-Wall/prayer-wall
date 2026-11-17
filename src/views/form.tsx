@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import type { FC } from "hono/jsx";
-import { REQUEST_LANGS, countryName, type Lang, type T } from "../lib/i18n";
+import { countryName, type Lang, type T } from "../lib/i18n";
 import { MAX_BODY, MAX_NAME } from "../lib/rules";
 
-export type FormValues = { kind: string; name: string; body: string; lang: string; hideCountry: boolean };
+export type FormValues = { kind: string; name: string; body: string; hideCountry: boolean };
 
-export const emptyForm = (lang: Lang): FormValues => ({ kind: "self", name: "", body: "", lang: lang.code, hideCountry: false });
+export const emptyForm = (): FormValues => ({ kind: "self", name: "", body: "", hideCountry: false });
 
 /** `country` is the visitor's country as the platform reports it, or null when it is not known. */
 type Props = { lang: Lang; t: T; values: FormValues; country: string | null; error?: string; siteKey: string };
@@ -43,19 +43,6 @@ export const PostForm: FC<Props> = ({ lang, t, values, country, error, siteKey }
         <p class="help" id="body-help">
           {t("form_body_help")} <span data-counter aria-live="polite"></span>
         </p>
-      </div>
-      <div>
-        <label for="lang">{t("form_lang")}</label>
-        <select id="lang" name="lang">
-          {REQUEST_LANGS.map((l) => (
-            <option value={l.code} lang={l.code} selected={values.lang === l.code}>
-              {l.name}
-            </option>
-          ))}
-          <option value="und" selected={values.lang === "und"}>
-            {t("form_lang_other")}
-          </option>
-        </select>
       </div>
       {countryName(lang.code, country) ? (
         <div>

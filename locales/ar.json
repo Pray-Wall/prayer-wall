@@ -89,12 +89,6 @@
   "form_body_help": {
     "message": "حتى 500 حرف."
   },
-  "form_lang": {
-    "message": "لغة الكتابة"
-  },
-  "form_lang_other": {
-    "message": "لغة أخرى"
-  },
   "form_rules": {
     "message": "ثلاث قواعد قصيرة"
   },

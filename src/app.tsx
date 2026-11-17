@@ -109,7 +109,7 @@ export function createApp(deps: AppDeps) {
     if (l instanceof Response) return l;
     const o = { title: l.t("ask_for_prayer"), hideAsk: true };
     if (!postingOpen()) return page(c, l.lang, l.t, <PostingClosed lang={l.lang} t={l.t} />, o);
-    return page(c, l.lang, l.t, <PostForm lang={l.lang} t={l.t} values={emptyForm(l.lang)} country={deps.clientCountry(c.req.raw)} siteKey={deps.botCheck!.siteKey} />, { ...o, botCheck: true });
+    return page(c, l.lang, l.t, <PostForm lang={l.lang} t={l.t} values={emptyForm()} country={deps.clientCountry(c.req.raw)} siteKey={deps.botCheck!.siteKey} />, { ...o, botCheck: true });
   });
 
   app.post("/:lang/new", async (c) => {
@@ -124,7 +124,6 @@ export function createApp(deps: AppDeps) {
       kind: field(form, "kind"),
       name: field(form, "name"),
       body: field(form, "body"),
-      lang: field(form, "lang"),
       hideCountry: field(form, "hide_country") === "1",
     };
     // A refused post comes back with everything the author typed and one plain sentence.
@@ -137,6 +136,8 @@ export function createApp(deps: AppDeps) {
       { db: deps.db, limiter: deps.limiter, botCheck: deps.botCheck!, masterSecret: deps.masterSecret! },
       {
         ...values,
+        // The request is taken to be written in the language of the page it was posted from.
+        lang: lang.code,
         country: values.hideCountry ? "" : (deps.clientCountry(c.req.raw) ?? ""),
         deviceId: DEVICE_ID_PATTERN.test(device) ? device : null,
         botResponse: field(form, "cf-turnstile-response") || undefined,

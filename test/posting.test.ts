@@ -6,7 +6,7 @@ import { DAY, HOUR, MASTER, NOW, bodies, clearRequests, postRequest, rows, testA
 
 beforeEach(clearRequests);
 
-const VALID = { kind: "other", name: "Grace", body: "Please pray for my mother Grace.", lang: "en" };
+const VALID = { kind: "other", name: "Grace", body: "Please pray for my mother Grace." };
 type Row = { id: string; status: string; hold_reason: string; body: string; display_name: string | null; kind: string; lang: string;
   country: string | null; owner_hash: string; poster_hash: string; body_hash: string; created_at: number; expires_at: number; published_at: number | null };
 const stored = () => rows<Row>("SELECT * FROM requests ORDER BY created_at, rowid");
@@ -14,15 +14,13 @@ const stored = () => rows<Row>("SELECT * FROM requests ORDER BY created_at, rowi
 describe("the posting form", () => {
   it("shows every field, the three rules and the bot check", async () => {
     const html = await (await testApp().request("/en/new")).text();
-    for (const s of ["Who is this for?", "Myself", "Someone else", "An event or group", "First name (optional)", "Your request",
-      "Written in", "No contact details or links.", "No requests for money.", "No preaching or arguing.",
+    for (const s of ["Who is this for?", "Myself", "Someone else", "An event or group", "First name (optional)", "Your request", "No contact details or links.", "No requests for money.", "No preaching or arguing.",
       'maxlength="500"', 'class="cf-turnstile" data-sitekey="test-site-key"', "challenges.cloudflare.com/turnstile"]) {
       expect(html).toContain(s);
     }
-    // "Written in" is preset to the interface language; with no known country nothing is said about one.
-    expect(html).toMatch(/<option value="en" lang="en" selected="">English<\/option>/);
+    // Nothing to choose from: no lists at all, and with no known country nothing is said about one.
+    expect(html).not.toContain("<select");
     expect(html).not.toContain("hide_country");
-    expect(await (await testApp().request("/ar/new")).text()).toMatch(/<option value="ar" lang="ar" selected="">العربية<\/option>/);
   });
 
   it("shows the visitor's country with an unticked 'Hide my country' box", async () => {
@@ -107,7 +105,13 @@ describe("a valid post", () => {
     const app = testApp();
     app.state.country = "Narnia";
     await app.post("/en/new", { kind: "self", name: "   ", body: "  Please pray for me.  ", lang: "tlh" });
-    expect((await stored())[0]).toMatchObject({ display_name: null, body: "Please pray for me.", lang: "und", country: null });
+    expect((await stored())[0]).toMatchObject({ display_name: null, body: "Please pray for me.", lang: "en", country: null });
+  });
+
+  it("takes the language from the page the request was posted from", async () => {
+    const app = testApp();
+    await app.post("/ar/new", { kind: "self", name: "", body: "أرجو أن تصلّوا من أجلي." });
+    expect((await stored())[0]!.lang).toBe("ar");
   });
 
   it("shows the country on the card once published, in the reader's language", async () => {
@@ -130,7 +134,7 @@ describe("a refused post", () => {
     ["too much", "a".repeat(501), "Your request is longer than 500 characters."],
   ])("with %s comes back with the reason and everything the author typed", async (_what, body, reason) => {
     const app = testApp();
-    const res = await app.post("/en/new", { ...VALID, body, name: "Grâce", lang: "fr" });
+    const res = await app.post("/en/new", { ...VALID, body, name: "Grâce" });
     expect(res.status).toBe(422);
     const html = await res.text();
     expect(html).toContain("Please change one thing");
@@ -139,7 +143,6 @@ describe("a refused post", () => {
     expect(html).toContain(`dir="auto" aria-describedby="body-help" data-count="true">${body}</textarea>`);
     expect(html).toContain('value="Grâce"');
     expect(html).toMatch(/<input type="radio" name="kind" value="other" checked=""/);
-    expect(html).toMatch(/<option value="fr" lang="fr" selected="">/);
     expect(await stored()).toEqual([]);
   });
 

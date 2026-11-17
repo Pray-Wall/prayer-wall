@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import type { Database, HoldReason } from "./database";
 import { bodyHash, dailyHasher, newOwnerToken, newRequestId, ownerHash } from "./hashes";
-import { isCountry, isRequestLang } from "./i18n";
+import { isCountry } from "./i18n";
 import { checkDraft, type RuleError } from "./rules";
 import type { BotCheck, RateLimiter } from "./services";
 
@@ -26,6 +26,7 @@ export type PostInput = {
   kind: string;
   name: string;
   body: string;
+  /** The interface language of the page the request was posted from. */
   lang: string;
   country: string;
   deviceId: string | null;
@@ -90,7 +91,7 @@ export async function submitRequest(deps: PostingDeps, input: PostInput, now: nu
     kind: input.kind as "self" | "other" | "event",
     displayName: name === "" ? null : name,
     body,
-    lang: isRequestLang(input.lang) ? input.lang : "und",
+    lang: input.lang,
     country: isCountry(input.country) ? input.country : null,
     status: "held",
     holdReason,
