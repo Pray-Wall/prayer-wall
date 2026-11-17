@@ -28,3 +28,14 @@ jobs:
       - run: npx wrangler deploy --var GIT_SHA:${{ github.sha }}
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      # The master secret keys the daily visitor hashes. It is generated here once, so that
+      # no person and no other machine ever sees it. Losing it only resets those hashes.
+      - name: Create MASTER_SECRET if it does not exist
+        run: |
+          secrets="$(npx wrangler secret list)"
+          case "$secrets" in
+            *MASTER_SECRET*) echo "MASTER_SECRET already set" ;;
+            *) openssl rand -hex 32 | npx wrangler secret put MASTER_SECRET ;;
+          esac
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

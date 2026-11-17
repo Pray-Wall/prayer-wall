@@ -9,12 +9,13 @@ const nextHref = (html: string) => html.match(/class="btn" href="([^"]+)"/)?.[1]
 beforeEach(clearRequests);
 
 describe("the wall page", () => {
-  it("is finished HTML with no script at all", async () => {
+  it("is finished HTML; the only script is the small optional one", async () => {
     await addRequest({ body: "Please pray for my exam" });
     const html = await get("/en");
     expect(html).toContain("Please pray for my exam");
     expect(html.startsWith("<!DOCTYPE html><html")).toBe(true);
-    expect(html).not.toMatch(/<script/i);
+    expect(html.match(/<script[^>]*>/g)).toEqual(['<script src="/wall.js" defer="">']);
+    expect(html).not.toMatch(/ on[a-z]+=/i);
     expect(html).not.toMatch(/<img/i);
   });
 
@@ -47,6 +48,7 @@ describe("the wall page", () => {
     await addRequest({ kind: "self", prayed: 0, age: 60 });
     const html = await get("/en?view=new");
     expect(html).toContain("For someone else · <bdi>Grace</bdi>");
+    expect(html).toContain('<a class="btn-primary" href="/en/new">Ask for prayer</a>');
     expect(html).toContain("For an event or group");
     expect(html).toContain("Personal request");
     expect(html).toContain("2 hours ago");

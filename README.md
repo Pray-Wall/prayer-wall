@@ -3,8 +3,9 @@
 One global web page where anyone can leave a prayer request and anyone can pray for it,
 each reading in their own language. No app, no account, no download.
 
-**Status:** early development. Milestone 1 is in place: a read-only wall with sample data.
-Posting, praying, moderation and translation are not built yet.
+**Status:** early development. Milestone 2 is in place: a wall with sample data, a posting form and
+the author's private link. Every new request is held, and moderation, praying and translation are
+not built yet, so the site is not open to the public.
 The plan is in [`docs/blueprint.md`](docs/blueprint.md) and changes to it are logged in
 [`docs/decisions.md`](docs/decisions.md).
 
@@ -27,6 +28,7 @@ git clone https://github.com/Pray-Wall/prayer-wall.git
 cd prayer-wall
 npm ci
 npm test
+cp .dev.vars.example .dev.vars
 npm run db:migrate:local && npm run db:seed:local
 npm run dev
 ```

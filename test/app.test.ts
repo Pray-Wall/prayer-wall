@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { SELF } from "cloudflare:test";
 import { describe, expect, it } from "vitest";
-import { createApp } from "../src/app";
+import { createApp, type AppDeps } from "../src/app";
+import type { Database } from "../src/lib/database";
 import { sourceUrl } from "../src/index";
 import { testApp } from "./helpers";
 
@@ -45,8 +46,8 @@ describe("/healthz", () => {
   });
 
   it("returns 503 when the database does not answer", async () => {
-    const db = { ping: async () => false, listPublished: async () => [], countPublishedSince: async () => [] };
-    const res = await createApp({ db, sourceUrl: "x" }).request("/healthz");
+    const db = { ping: async () => false } as unknown as Database;
+    const res = await createApp({ ...({} as AppDeps), db, sourceUrl: "x" }).request("/healthz");
     expect(res.status).toBe(503);
     expect(await res.json()).toEqual({ ok: false });
   });
@@ -71,5 +72,6 @@ describe("unknown paths", () => {
   it("anything else is a 404", async () => {
     expect((await testApp().request("/not-a-language-code")).status).toBe(404);
     expect((await testApp().request("/en/nope")).status).toBe(404);
+    expect((await testApp().request("/de/new")).headers.get("location")).toBe("/en/new");
   });
 });

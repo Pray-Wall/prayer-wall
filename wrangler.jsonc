@@ -14,7 +14,12 @@
   "vars": {
     // Overwritten at deploy time with the commit being deployed (AGPL source link).
     "GIT_SHA": "dev",
-    "REPO_URL": "https://github.com/Pray-Wall/prayer-wall"
+    "REPO_URL": "https://github.com/Pray-Wall/prayer-wall",
+    // review_all: every request waits for a moderator. closed: posting is paused.
+    "MODE": "review_all",
+    // Public Turnstile site key. Posting stays paused until this and the secrets
+    // TURNSTILE_SECRET and MASTER_SECRET are set (see docs/runbook.md).
+    "TURNSTILE_SITE_KEY": ""
   },
   "d1_databases": [
     {

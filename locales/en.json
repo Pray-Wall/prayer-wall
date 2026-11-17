@@ -1,18 +1,310 @@
 {
-  "app_name": { "message": "Prayer Wall", "description": "The working name of the site, shown in the header and the browser tab." },
-  "meta_description": { "message": "A place to ask for prayer and to pray for others.", "description": "Short description for search engines and link previews. Never contains request text." },
-  "skip_to_requests": { "message": "Skip to the requests", "description": "Hidden link for keyboard and screen-reader users that jumps past the header." },
-  "tabs_label": { "message": "Order of requests", "description": "Screen-reader name for the two tabs that choose the ordering." },
-  "tab_need": { "message": "Needs prayer", "description": "Tab: requests with the fewest prayers first. The default view." },
-  "tab_new": { "message": "Newest", "description": "Tab: most recently published requests first." },
-  "kind_self": { "message": "Personal request", "description": "Card label: the author asks for prayer for themselves." },
-  "kind_other": { "message": "For someone else", "description": "Card label: the author asks for prayer for another person." },
-  "kind_event": { "message": "For an event or group", "description": "Card label: the request is for an event or a group of people." },
-  "prayed_none": { "message": "No prayers yet", "description": "Shown on a card nobody has prayed for yet." },
-  "prayed_one": { "message": "Prayed once", "description": "Prayer count on a card, plural form 'one'. Languages may also define prayed_zero, prayed_two, prayed_few, prayed_many." },
-  "prayed_other": { "message": "Prayed {n} times", "description": "Prayer count on a card, general plural form. {n} is the number." },
-  "more": { "message": "More", "description": "Link at the bottom of the wall that loads the next 20 requests." },
-  "empty": { "message": "There are no requests here yet.", "description": "Shown when the wall has nothing to show." },
-  "language": { "message": "Language", "description": "Heading of the language list in the footer." },
-  "source_code": { "message": "Source code", "description": "Footer link to the source code of the running version." }
+  "app_name": {
+    "message": "Prayer Wall",
+    "description": "The working name of the site, shown in the header and the browser tab."
+  },
+  "meta_description": {
+    "message": "A place to ask for prayer and to pray for others.",
+    "description": "Short description for search engines and link previews. Never contains request text."
+  },
+  "skip_to_requests": {
+    "message": "Skip to the requests",
+    "description": "Hidden link for keyboard and screen-reader users that jumps past the header."
+  },
+  "tabs_label": {
+    "message": "Order of requests",
+    "description": "Screen-reader name for the two tabs that choose the ordering."
+  },
+  "tab_need": {
+    "message": "Needs prayer",
+    "description": "Tab: requests with the fewest prayers first. The default view."
+  },
+  "tab_new": {
+    "message": "Newest",
+    "description": "Tab: most recently published requests first."
+  },
+  "kind_self": {
+    "message": "Personal request",
+    "description": "Card label: the author asks for prayer for themselves."
+  },
+  "kind_other": {
+    "message": "For someone else",
+    "description": "Card label: the author asks for prayer for another person."
+  },
+  "kind_event": {
+    "message": "For an event or group",
+    "description": "Card label: the request is for an event or a group of people."
+  },
+  "prayed_none": {
+    "message": "No prayers yet",
+    "description": "Shown on a card nobody has prayed for yet."
+  },
+  "prayed_one": {
+    "message": "Prayed once",
+    "description": "Prayer count on a card, plural form 'one'. Languages may also define prayed_zero, prayed_two, prayed_few, prayed_many."
+  },
+  "prayed_other": {
+    "message": "Prayed {n} times",
+    "description": "Prayer count on a card, general plural form. {n} is the number."
+  },
+  "more": {
+    "message": "More",
+    "description": "Link at the bottom of the wall that loads the next 20 requests."
+  },
+  "empty": {
+    "message": "There are no requests here yet.",
+    "description": "Shown when the wall has nothing to show."
+  },
+  "language": {
+    "message": "Language",
+    "description": "Heading of the language list in the footer."
+  },
+  "source_code": {
+    "message": "Source code",
+    "description": "Footer link to the source code of the running version."
+  },
+  "ask_for_prayer": {
+    "message": "Ask for prayer",
+    "description": "Button in the header that opens the posting form; also the title of that form."
+  },
+  "my_request": {
+    "message": "My request",
+    "description": "Header link shown only on a device that has posted a request; opens the private page."
+  },
+  "back_to_wall": {
+    "message": "Back to the wall",
+    "description": "Link from the form, confirmation and private pages back to the wall."
+  },
+  "form_kind": {
+    "message": "Who is this for?",
+    "description": "Form question with three choices."
+  },
+  "form_kind_self": {
+    "message": "Myself",
+    "description": "Form choice: the request is for the author."
+  },
+  "form_kind_other": {
+    "message": "Someone else",
+    "description": "Form choice: the request is for another person."
+  },
+  "form_kind_event": {
+    "message": "An event or group",
+    "description": "Form choice: the request is for an event or a group."
+  },
+  "form_name": {
+    "message": "First name (optional)",
+    "description": "Label of the optional first-name field."
+  },
+  "form_name_help": {
+    "message": "First name only. If this is for someone else, leave out anything that identifies them.",
+    "description": "Helper text under the first-name field."
+  },
+  "form_body": {
+    "message": "Your request",
+    "description": "Label of the request text field."
+  },
+  "form_body_help": {
+    "message": "Up to 500 characters.",
+    "description": "Helper text under the request field."
+  },
+  "form_lang": {
+    "message": "Written in",
+    "description": "Label of the list where the author says which language the request is written in."
+  },
+  "form_lang_other": {
+    "message": "Another language",
+    "description": "Last entry of the 'Written in' list."
+  },
+  "form_country": {
+    "message": "Where are you? (optional)",
+    "description": "Label of the optional country list. The author chooses; nothing is detected."
+  },
+  "form_country_none": {
+    "message": "Prefer not to say",
+    "description": "First entry of the country list; the default."
+  },
+  "form_country_help": {
+    "message": "If you choose a country, it is shown beside your request.",
+    "description": "Helper text under the country list."
+  },
+  "form_rules": {
+    "message": "Three short rules",
+    "description": "Heading above the three rules on the form."
+  },
+  "rule_contact": {
+    "message": "No contact details or links.",
+    "description": "First of the three short rules on the form."
+  },
+  "rule_money": {
+    "message": "No requests for money.",
+    "description": "Second of the three short rules on the form."
+  },
+  "rule_preach": {
+    "message": "No preaching or arguing.",
+    "description": "Third of the three short rules on the form."
+  },
+  "form_submit": {
+    "message": "Post",
+    "description": "The button that sends the request."
+  },
+  "form_needs_js": {
+    "message": "Posting needs JavaScript for a quick check that you are a person. Reading the wall works without it.",
+    "description": "Shown on the form when JavaScript is off."
+  },
+  "err_title": {
+    "message": "Please change one thing",
+    "description": "Heading of the message shown when a post is refused. The author's text is kept."
+  },
+  "err_empty": {
+    "message": "Please write your request.",
+    "description": "Refusal: the request is empty."
+  },
+  "err_too_long": {
+    "message": "Your request is longer than 500 characters. Please shorten it.",
+    "description": "Refusal: too long."
+  },
+  "err_link": {
+    "message": "Please remove the link or web address. The wall cannot carry links.",
+    "description": "Refusal: contains a link."
+  },
+  "err_email": {
+    "message": "Please remove the email address. The wall cannot carry contact details.",
+    "description": "Refusal: contains an email address."
+  },
+  "err_phone": {
+    "message": "Please remove the phone number. The wall cannot carry contact details.",
+    "description": "Refusal: contains a phone number."
+  },
+  "err_handle": {
+    "message": "Please remove the username. The wall cannot carry contact details.",
+    "description": "Refusal: contains a username such as @name."
+  },
+  "err_name_long": {
+    "message": "Please keep the first name to 30 characters.",
+    "description": "Refusal: the first name is too long."
+  },
+  "err_name_contact": {
+    "message": "Please use a first name only, without contact details.",
+    "description": "Refusal: the first-name field contains contact details."
+  },
+  "err_kind": {
+    "message": "Please choose who this request is for.",
+    "description": "Refusal: no choice made for 'Who is this for?'."
+  },
+  "err_bot": {
+    "message": "We could not confirm that you are a person. Please try again.",
+    "description": "Refusal: the bot check did not pass."
+  },
+  "err_too_many": {
+    "message": "Many requests have come from your network today, so we cannot take more until tomorrow. Your text is still here.",
+    "description": "Refusal: more than 60 posts from one network in a day. Polite; the text is kept."
+  },
+  "err_origin": {
+    "message": "This form was sent from somewhere else. Please open the page again and retry.",
+    "description": "Shown when a form post does not come from this site."
+  },
+  "posting_closed": {
+    "message": "Posting is paused for now. You can still read the wall.",
+    "description": "Kind notice shown instead of the form when posting is closed."
+  },
+  "confirm_title": {
+    "message": "Your request has been received",
+    "description": "Heading of the confirmation page. Must not promise that people will pray or that it is on the wall."
+  },
+  "confirm_link": {
+    "message": "Your private link",
+    "description": "Label of the field holding the author's private link."
+  },
+  "confirm_keep": {
+    "message": "Keep this link. It is the only way to manage your request.",
+    "description": "The one sentence under the private link."
+  },
+  "copy_link": {
+    "message": "Copy link",
+    "description": "Button that copies the private link."
+  },
+  "copied": {
+    "message": "Copied",
+    "description": "Shown on the copy button after it worked."
+  },
+  "open_my_request": {
+    "message": "Open my request",
+    "description": "Link from the confirmation page to the private page."
+  },
+  "mine_paste": {
+    "message": "Paste your private link",
+    "description": "Label of the field on the private page when no link was given."
+  },
+  "mine_paste_help": {
+    "message": "This is the link you were shown after posting.",
+    "description": "Helper text under that field."
+  },
+  "mine_open": {
+    "message": "Open",
+    "description": "Button that opens the request for the pasted link."
+  },
+  "mine_not_found": {
+    "message": "We could not find a request for this link. It may have expired or been deleted.",
+    "description": "Private page: no request matches."
+  },
+  "mine_too_many": {
+    "message": "There were too many tries from your network. Please wait an hour and try again.",
+    "description": "Private page: lookup limit reached."
+  },
+  "status_held": {
+    "message": "Waiting for review",
+    "description": "Private page status: a moderator has not decided yet."
+  },
+  "status_published": {
+    "message": "Your request is on the wall, and people can pray for it.",
+    "description": "Private page status after publishing."
+  },
+  "status_removed": {
+    "message": "This request was removed by a moderator.",
+    "description": "Private page status: removed."
+  },
+  "status_expired": {
+    "message": "This request has ended.",
+    "description": "Private page status: expired."
+  },
+  "answered_done": {
+    "message": "You marked this request as answered.",
+    "description": "Private page: shown once the author has marked it answered."
+  },
+  "extended_done": {
+    "message": "Your request will stay on the wall 30 more days.",
+    "description": "Private page: shown after extending."
+  },
+  "act_answered": {
+    "message": "Mark as answered",
+    "description": "Private page action."
+  },
+  "act_extend": {
+    "message": "Keep it on the wall 30 more days",
+    "description": "Private page action, allowed once."
+  },
+  "act_delete": {
+    "message": "Delete now",
+    "description": "Private page action."
+  },
+  "delete_title": {
+    "message": "Delete this request?",
+    "description": "Heading of the delete confirmation step."
+  },
+  "delete_body": {
+    "message": "It will be removed at once and cannot be brought back.",
+    "description": "Text of the delete confirmation step."
+  },
+  "delete_yes": {
+    "message": "Yes, delete it",
+    "description": "Confirms the deletion."
+  },
+  "delete_no": {
+    "message": "No, keep it",
+    "description": "Cancels the deletion."
+  },
+  "deleted_title": {
+    "message": "Your request has been deleted",
+    "description": "Shown after deletion."
+  }
 }

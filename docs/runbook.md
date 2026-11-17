@@ -10,6 +10,7 @@ What to do when something breaks. It grows with each milestone; sections marked 
 | Hosting | Cloudflare Workers, worker name `prayer-wall` |
 | Database | Cloudflare D1, name `prayer-wall`, jurisdiction EU |
 | Deploys | GitHub Actions, workflow "Deploy", on every merge to `main` |
+| Secrets the site uses | Worker secrets `MASTER_SECRET` and `TURNSTILE_SECRET`, in Cloudflare (Worker → Settings → Variables and Secrets) |
 | Secrets for deploying | GitHub repository secret `CLOUDFLARE_API_TOKEN`; the account id is in `wrangler.jsonc` |
 
 ## Is it up?
@@ -22,6 +23,32 @@ Open `/healthz`. It returns `{"ok":true}` with status 200 when the database answ
 2. If tests failed, fix them in a pull request. Nothing was deployed.
 3. If `wrangler deploy` failed with an authentication error, the API token has expired or been revoked:
    create a new one (below) and update the `CLOUDFLARE_API_TOKEN` secret.
+
+## Posting is paused ("Posting is paused for now")
+
+The form shows this notice when any of these is true:
+
+1. `MODE` in `wrangler.jsonc` is `closed`.
+2. `TURNSTILE_SITE_KEY` in `wrangler.jsonc` is empty.
+3. The Worker secret `TURNSTILE_SECRET` or `MASTER_SECRET` is missing.
+
+### Set up the bot check (Turnstile), once
+
+1. Cloudflare dashboard → Turnstile → Add widget. Name `prayer-wall`; add the site's hostname; mode "Managed".
+   Leave pre-clearance off, so that no cookie is set.
+2. Put the **site key** (public) in `wrangler.jsonc` as `TURNSTILE_SITE_KEY` and merge.
+3. Put the **secret key** in the Worker: Workers & Pages → `prayer-wall` → Settings → Variables and Secrets →
+   Add → type Secret, name `TURNSTILE_SECRET`. Never put it in the repository.
+
+### The master secret
+
+`MASTER_SECRET` keys the daily visitor hashes and the duplicate check. The Deploy workflow creates it
+once with a random value that nobody sees. If it is ever lost or replaced, nothing breaks: today's
+posting limits and the duplicate check start again from zero, and private links keep working.
+
+## Pause posting
+
+Set `MODE` to `closed` in `wrangler.jsonc` and merge. Reading stays available. Set it back to `review_all` to reopen.
 
 ## Database changes
 
@@ -55,7 +82,8 @@ service back on a fresh Cloudflare account:
 5. Merge to `main`, or re-run the Deploy workflow. It applies the migrations to the empty database.
 6. Check `/healthz`.
 
-Later milestones add steps here: the master secret, Turnstile keys, Cloudflare Access.
+Then set up the bot check as described above; the master secret is created by the deploy.
+Later milestones add steps here: Cloudflare Access.
 
 ## Who can act
 

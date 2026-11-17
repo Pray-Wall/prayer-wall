@@ -13,6 +13,57 @@ export const LANGS: readonly Lang[] = [
 ];
 export const DEFAULT_LANG = "en";
 
+/** Languages a request may be written in (the proposed launch list), each named in its own language. */
+export const REQUEST_LANGS: readonly { code: string; name: string }[] = [
+  { code: "en", name: "English" },
+  { code: "es", name: "Español" },
+  { code: "pt", name: "Português" },
+  { code: "fr", name: "Français" },
+  { code: "ru", name: "Русский" },
+  { code: "uk", name: "Українська" },
+  { code: "id", name: "Bahasa Indonesia" },
+  { code: "ar", name: "العربية" },
+  { code: "he", name: "עברית" },
+  { code: "hi", name: "हिन्दी" },
+  { code: "ko", name: "한국어" },
+  { code: "zh", name: "中文" },
+];
+export const isRequestLang = (code: string) => REQUEST_LANGS.some((l) => l.code === code);
+
+// ISO 3166-1 alpha-2, plus XK. The author may choose one; it is never derived from the network address.
+const COUNTRY_CODES = (
+  "AD AE AF AG AI AL AM AO AR AS AT AU AW AX AZ BA BB BD BE BF BG BH BI BJ BL BM BN BO BQ BR BS BT BW BY BZ " +
+  "CA CC CD CF CG CH CI CK CL CM CN CO CR CU CV CW CX CY CZ DE DJ DK DM DO DZ EC EE EG EH ER ES ET FI FJ FK FM FO FR " +
+  "GA GB GD GE GF GG GH GI GL GM GN GP GQ GR GT GU GW GY HK HN HR HT HU ID IE IL IM IN IQ IR IS IT JE JM JO JP " +
+  "KE KG KH KI KM KN KP KR KW KY KZ LA LB LC LI LK LR LS LT LU LV LY MA MC MD ME MF MG MH MK ML MM MN MO MP MQ MR MS MT MU MV MW MX MY MZ " +
+  "NA NC NE NF NG NI NL NO NP NR NU NZ OM PA PE PF PG PH PK PL PM PN PR PS PT PW PY QA RE RO RS RU RW " +
+  "SA SB SC SD SE SG SH SI SJ SK SL SM SN SO SR SS ST SV SX SY SZ TC TD TG TH TJ TK TL TM TN TO TR TT TV TW TZ " +
+  "UA UG US UY UZ VA VC VE VG VI VN VU WF WS XK YE YT ZA ZM ZW"
+).split(" ");
+const COUNTRY_SET = new Set(COUNTRY_CODES);
+export const isCountry = (code: string) => COUNTRY_SET.has(code);
+
+const regionNames = new Map<string, Intl.DisplayNames>();
+/** The country's name in the interface language, or null for an unknown code. */
+export function countryName(lang: string, code: string | null): string | null {
+  if (!code || !isCountry(code)) return null;
+  let names = regionNames.get(lang);
+  if (!names) regionNames.set(lang, (names = new Intl.DisplayNames([lang], { type: "region" })));
+  return names.of(code) ?? code;
+}
+
+const countryLists = new Map<string, { code: string; name: string }[]>();
+/** Every country, sorted by its name in the interface language. */
+export function countryOptions(lang: string): { code: string; name: string }[] {
+  let list = countryLists.get(lang);
+  if (!list) {
+    const collator = new Intl.Collator(lang);
+    list = COUNTRY_CODES.map((code) => ({ code, name: countryName(lang, code)! })).sort((a, b) => collator.compare(a.name, b.name));
+    countryLists.set(lang, list);
+  }
+  return list;
+}
+
 const catalogs: Record<string, Catalog> = { en, ar };
 
 export function getLang(code: string): Lang | undefined {

@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import type { FC } from "hono/jsx";
 import type { WallRequest } from "../lib/database";
-import type { Lang, T } from "../lib/i18n";
+import { countryName, type Lang, type T } from "../lib/i18n";
 import type { WallPage, WallView } from "../lib/wall";
 
-const Card: FC<{ r: WallRequest; t: T; now: number }> = ({ r, t, now }) => (
+const Card: FC<{ r: WallRequest; t: T; lang: Lang; now: number }> = ({ r, t, lang, now }) => (
   <li>
     <article class="card">
       <p class="who">
@@ -15,6 +15,7 @@ const Card: FC<{ r: WallRequest; t: T; now: number }> = ({ r, t, now }) => (
             <bdi>{r.displayName}</bdi>
           </>
         ) : null}
+        {r.country ? ` · ${countryName(lang.code, r.country)}` : null}
       </p>
       {/* User text is escaped by the template and shown as plain text, in its own language and direction. */}
       <p class="text" lang={r.lang} dir="auto" data-nosnippet>
@@ -40,6 +41,7 @@ export const Wall: FC<Props> = ({ lang, t, view, page, now }) => {
   };
   return (
     <>
+      <h1 class="sr">{t("app_name")}</h1>
       <nav class="tabs" aria-label={t("tabs_label")}>
         <a href={href("need")} aria-current={view === "need" ? "page" : undefined}>
           {t("tab_need")}
@@ -53,7 +55,7 @@ export const Wall: FC<Props> = ({ lang, t, view, page, now }) => {
       ) : (
         <ul class="wall">
           {page.requests.map((r) => (
-            <Card r={r} t={t} now={now} />
+            <Card r={r} t={t} lang={lang} now={now} />
           ))}
         </ul>
       )}

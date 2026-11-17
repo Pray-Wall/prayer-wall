@@ -83,6 +83,34 @@ Accepted by the maintainer in the build prompt. The full text is in the blueprin
 | Every colour pair meets 4.5:1, including the dark column | Yes, all 22 pairs; lowest is muted text on the page background in light mode at 5.07. `node scripts/contrast.mjs` re-checks. |
 | The wall transfers under 50 KB, under 10 KB of JavaScript, no images | About 4 KB compressed (12.7 KB uncompressed) for 20 cards plus the stylesheet; no JavaScript; no images |
 
+## 17 November 2026: Milestone 2
+
+| Topic | Decision | Why |
+| --- | --- | --- |
+| Country on a request | **New, asked for by the maintainer.** An optional list on the form, blank by default ("Prefer not to say"); shown on the card in the reader's language. Stored as a two-letter code in `requests.country`. Never derived from the network address. | Makes the wall feel global without publishing a location the author did not choose. An automatic country would break the promise that nothing but a daily hash is derived from the network address, and can endanger people where prayer is risky. |
+| Private page transport | The page's script puts the token from after `#` into a form and posts it to `/{lang}/mine`; the result is rendered by the server. There is no `/api/mine`. | **Differs from the blueprint**, which names `POST /api/mine`. Same guarantee (the token travels only in a POST body and never in an address), far less script, and the page also works with JavaScript off by pasting the link. Awaiting the maintainer's confirmation at the M2 review. |
+| Delete | "Delete now" shows a confirmation step, then deletes the row | A single tap must not be able to destroy a request; works with JavaScript off |
+| Order of checks on a post | Bot check, then fixed text rules, then limits, then the duplicate check | A post refused for a fixable reason (a phone number, too long) does not use up the author's daily allowance |
+| Same-origin check | `Sec-Fetch-Site: same-origin` first; a matching `Origin` only when that header is absent | Pages served with `Referrer-Policy: no-referrer` (planned for M7) send `Origin: null` on their own form posts |
+| Hold reasons | `review_all`, `soft_limit`, `duplicate`, `bot_check_unavailable`; the most specific one is recorded | Tells the moderator why a request is in the queue |
+| Held requests | `expires_at` is 14 days after posting until a moderator publishes | Blueprint: an unreviewed held request is deleted after 14 days |
+| "Written in" | The twelve proposed launch languages plus "Another language" (`und`) | The list of launch languages is still an open question; this is the blueprint's proposal |
+| Posting when not configured | The form is replaced by "Posting is paused for now" until the Turnstile keys and the master secret exist | Fails closed: posting never runs without the bot check |
+| Master secret | Generated once by the Deploy workflow; no person sees it | It cannot leak from a chat, a laptop or a password manager, and losing it is harmless |
+| Device id | A random value in the browser's storage, sent with a post; only its daily hash keys a one-day counter. It is not stored with the request. | Per-device posting limit without identifying anyone |
+| Remembering the link | The browser keeps up to 20 tokens and shows a "My request" link in the header | Blueprint: "the link is also remembered on that device" |
+| Phone-number rule | Seven or more digits in any script, separated only by spaces, dashes or brackets. Dots are not separators. | Dates such as 12.11.2026 must not be refused |
+| Not built in M2 | "Pray while you wait" on the confirmation page; the "Need to talk to someone now?" link; `requests_total` | They need the prayer button (M4), the support page (M5) and publishing (M3) |
+
+### Assumptions verified for M2 (17 November 2026)
+
+| Assumption | Result |
+| --- | --- |
+| Is the Workers rate-limiting binding a better fit than a table? | No. Its window can only be 10 or 60 seconds and it counts per Cloudflare location, so it cannot express hourly or daily limits. The `rate_limits` table is used. Source: Cloudflare Workers "Rate Limiting" binding docs. |
+| Is Turnstile free at this volume, and what does it store? | Free on the free plan. By default the widget returns a token and sets no clearance cookie; a `cf_clearance` cookie is set only with the optional pre-clearance, which the runbook says to leave off. **Partly verified**: the cookie behaviour is from Cloudflare's docs, but what else the widget keeps in the browser needs a check with the browser's developer tools on the live form, and the privacy page (M7) must be written from that check. |
+| Does the part of a link after `#` survive copying and sharing on iOS and Android? | **Not verified.** It is standard browser behaviour, but the blueprint asks for a device test. The maintainer should post once from a phone, share the link to themselves, and open it. |
+| Is 10 ms of processor time enough once hashes are computed? | To be measured on the live site after this deploy. |
+
 ## Proposed, awaiting the maintainer's decision
 
 The accepted 2.2 changes conflict with four later passages. None affects M0. Each needs a yes or no
@@ -92,5 +120,6 @@ before the milestone named.
 | --- | --- | --- | --- |
 | P1 | Changes 2 and 9 remove the red and black queue tiers, but the M3 acceptance criteria and one M7 load test still test "60 then 150 held items: cap, then `closed`" | Rewrite both to test `unattended` mode; keep `closed` only as a mode the maintainer sets by hand | M3 |
 | P2 | The build prompt keeps the soft Turnstile challenge on prayers "off by default (or anomaly-only)", but change 9 removes the anomaly flag | Build it behind a configuration switch that is off, with no automatic trigger | M4 |
+| P5 | The blueprint's API table has `POST /api/mine`; M2 posts the token to `/{lang}/mine` instead (see Milestone 2) | Keep the server-rendered form post | M2 review |
 | P3 | Change 6 makes `/r/{id}` the address to share; the API table lists `/{lang}/r/{id}` | `/r/{id}` redirects to `/{lang}/r/{id}`, which stays the rendered page | M4 |
 | P4 | The build prompt's summary of change 4 omits the cap on the eager set | Use the cap of 8 from the 2.2 text | M6 |
