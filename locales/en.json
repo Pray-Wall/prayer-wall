@@ -107,14 +107,6 @@
     "message": "Up to 500 characters.",
     "description": "Helper text under the request field."
   },
-  "form_lang": {
-    "message": "Written in",
-    "description": "Label of the list where the author says which language the request is written in."
-  },
-  "form_lang_other": {
-    "message": "Another language",
-    "description": "Last entry of the 'Written in' list."
-  },
   "form_rules": {
     "message": "Three short rules",
     "description": "Heading above the three rules on the form."
