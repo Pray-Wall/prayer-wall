@@ -298,3 +298,23 @@ describe("Turnstile adapter", () => {
     expect(await never.verify(undefined)).toBe("fail");
   });
 });
+
+describe("Turnstile adapter with the runtime's own fetch", () => {
+  it("can call fetch without an 'Illegal invocation' error", async () => {
+    // Whatever the network answers, a wrong secret must never come back as "unavailable"
+    // because of how fetch was called. Stub the global so the test does not depend on the network.
+    const original = globalThis.fetch;
+    let calledWithThis: unknown = "not called";
+    globalThis.fetch = function (this: unknown) {
+      calledWithThis = this;
+      return Promise.resolve(new Response(JSON.stringify({ success: true })));
+    } as typeof fetch;
+    try {
+      expect(await new TurnstileBotCheck("site", "secret").verify("widget-response")).toBe("pass");
+      // Called as a plain function, never as a method of the adapter.
+      expect(calledWithThis === undefined || calledWithThis === globalThis).toBe(true);
+    } finally {
+      globalThis.fetch = original;
+    }
+  });
+});

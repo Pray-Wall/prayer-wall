@@ -8,7 +8,9 @@ export class TurnstileBotCheck implements BotCheck {
   constructor(
     readonly siteKey: string,
     private readonly secret: string,
-    private readonly fetcher: typeof fetch = fetch,
+    // Wrapped, not stored bare: the runtime's fetch throws "Illegal invocation" when it is
+    // called as a method of another object, which made every verification look unreachable.
+    private readonly fetcher: typeof fetch = (input, init) => fetch(input, init),
   ) {}
 
   async verify(response: string | undefined): Promise<BotVerdict> {
