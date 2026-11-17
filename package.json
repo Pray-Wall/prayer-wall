@@ -1,0 +1,25 @@
+{
+  "name": "prayer-wall",
+  "version": "0.0.0",
+  "private": true,
+  "description": "A minimal, account-free prayer wall where anyone can ask for prayer and anyone can pray, each in their own language.",
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "dev": "wrangler dev",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "deploy": "wrangler deploy"
+  },
+  "dependencies": {
+    "hono": "^4.13.18"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-plugin": "^1.8.2",
+    "@cloudflare/workers-types": "^5.20261114.1",
+    "typescript": "^5.9.3",
+    "vitest": "^5.1.0",
+    "wrangler": "^4.162.0"
+  }
+}

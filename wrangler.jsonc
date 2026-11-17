@@ -1,0 +1,26 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "prayer-wall",
+  // Account identifiers are not secret; the API token lives in GitHub secrets.
+  "account_id": "40ff95d04b2109d85aa2abd02ce902ac",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-11-01",
+  "workers_dev": true,
+  // Logs stay off: the privacy design keeps network addresses out of logs.
+  "observability": { "enabled": false },
+  "vars": {
+    // Overwritten at deploy time with the commit being deployed (AGPL source link).
+    "GIT_SHA": "dev",
+    "REPO_URL": "https://github.com/Pray-Wall/prayer-wall"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "prayer-wall",
+      // Created 17 Nov 2026 with jurisdiction "eu". Not a secret.
+      "database_id": "9bb66ac1-5483-4f4e-8e40-dd3a98fbb501",
+      "migrations_dir": "migrations"
+    }
+  ]
+}
