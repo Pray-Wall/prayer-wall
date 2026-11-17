@@ -172,6 +172,9 @@ describe("a refused post", () => {
     app.state.bot = "misconfigured";
     expect(await (await app.post("/en/new", VALID)).text()).toContain("Your request has been received");
     expect((await stored())[0]).toMatchObject({ status: "held", hold_reason: "bot_check_misconfigured" });
+    // It is reported even when a soft limit or a duplicate would also apply.
+    for (let i = 0; i < 6; i++) await app.post("/en/new", VALID);
+    expect((await stored()).map((r) => r.hold_reason)).toEqual(Array(7).fill("bot_check_misconfigured"));
   });
 
   it("is refused when it comes from another site", async () => {

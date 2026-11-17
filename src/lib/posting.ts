@@ -72,15 +72,14 @@ export async function submitRequest(deps: PostingDeps, input: PostInput, now: nu
   const duplicate = (await deps.db.countByBodyHash(textHash, now - DAY)) >= LIMITS.sameTextIn24h;
 
   // 5. Decision. In review_all every request is held; the reason tells the moderator why.
-  const holdReason: HoldReason = duplicate
-    ? "duplicate"
-    : overSoftLimit
-      ? "soft_limit"
-      : verdict === "misconfigured"
-        ? "bot_check_misconfigured"
-        : verdict === "unavailable"
-          ? "bot_check_unavailable"
-          : "review_all";
+  // A wrong Turnstile secret comes first: it means no bot check is running, which the operator
+  // must see even when another reason also applies.
+  const holdReason: HoldReason =
+    verdict === "misconfigured" ? "bot_check_misconfigured"
+    : duplicate ? "duplicate"
+    : overSoftLimit ? "soft_limit"
+    : verdict === "unavailable" ? "bot_check_unavailable"
+    : "review_all";
 
   const token = newOwnerToken();
   const id = newRequestId();
