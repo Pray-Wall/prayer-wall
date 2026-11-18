@@ -100,7 +100,6 @@ describe("the queue", () => {
     for (const s of [
       "For someone else · <bdi>Grace</bdi> · ID · written in: en",
       "Please pray for &lt;b&gt;Grace&lt;/b&gt;.",
-      "Translation unavailable",
       "Not run (the classifier arrives in milestone 5)",
       "review_all mode: every request is reviewed",
       "<dt>Reports</dt><dd>None</dd>",
@@ -109,7 +108,7 @@ describe("the queue", () => {
       ">Publish<", ">Remove<", ">Ask for a second opinion<", ">Skip<",
       "2 waiting",
     ]) expect(html).toContain(s);
-    for (const reason of ["contact", "money", "identifies", "preaching", "harm", "unsuitable", "not_prayer", "spam", "other"]) {
+    for (const reason of ["contact", "money", "identifies", "preaching", "harm", "unsuitable", "not_prayer", "not_english", "spam", "other"]) {
       expect(html).toContain(`<option value="${reason}">`);
     }
   });

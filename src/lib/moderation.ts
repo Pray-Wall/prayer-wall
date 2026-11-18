@@ -19,7 +19,7 @@ export const UNATTENDED_AFTER = 48 * HOUR;
 export const QUEUE_PAGE = 20;
 
 /** Reason categories for a removal. The category is shown to the author on the private page. */
-export const REMOVE_REASONS = ["contact", "money", "identifies", "preaching", "harm", "unsuitable", "not_prayer", "spam", "other"] as const;
+export const REMOVE_REASONS = ["contact", "money", "identifies", "preaching", "harm", "unsuitable", "not_prayer", "not_english", "spam", "other"] as const;
 export type RemoveReason = (typeof REMOVE_REASONS)[number];
 export const isRemoveReason = (v: string): v is RemoveReason => (REMOVE_REASONS as readonly string[]).includes(v);
 
