@@ -34,7 +34,7 @@ npm run dev
 ```
 
 `npm run dev` serves the site at `http://localhost:8787` with a local database holding 40 invented
-sample requests in twelve languages. No Cloudflare account is needed.
+sample requests in English. No Cloudflare account is needed.
 
 ## How it is built
 
