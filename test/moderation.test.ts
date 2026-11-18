@@ -71,6 +71,24 @@ describe("/mod sign-in", () => {
   });
 });
 
+describe("the test alert", () => {
+  it("sends one alert, at most once a minute, and only for a signed-in moderator", async () => {
+    const app = testApp();
+    expect((await app.post("/mod/test-alert", {})).status).toBe(403);
+    app.state.moderator = MOD;
+    expect(await queue(app)).toContain('action="/mod/test-alert"');
+    const res = await app.post("/mod/test-alert", {});
+    expect(res.status).toBe(303);
+    expect(res.headers.get("location")).toBe("/mod?alert=sent");
+    await app.post("/mod/test-alert", {});
+    expect(app.state.alerts).toEqual([{ kind: "test", text: "Test alert. If you can read this, alerts reach you." }]);
+    expect(await queue(app, "/mod?alert=sent")).toContain("A test alert was sent.");
+    app.state.now += 61;
+    await app.post("/mod/test-alert", {});
+    expect(app.state.alerts).toHaveLength(2);
+  });
+});
+
 describe("the queue", () => {
   it("shows every field a moderator needs", async () => {
     const app = signedIn();

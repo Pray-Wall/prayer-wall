@@ -131,9 +131,20 @@ export function createApp(deps: AppDeps) {
     ]);
     return page(
       c, english.lang, english.t,
-      <ModQueue moderator={who} items={items} waiting={summary.waiting} now={at} skip={skip} unattended={unattended} breaker={breaker} />,
+      <ModQueue moderator={who} items={items} waiting={summary.waiting} now={at} skip={skip} unattended={unattended} breaker={breaker} alertSent={c.req.query("alert") === "sent"} />,
       o,
     );
+  });
+
+  // Lets a moderator check that alerts arrive. At most once a minute.
+  app.post("/mod/test-alert", async (c) => {
+    const who = await moderator(c);
+    if (who instanceof Response) return who;
+    if (!isSameOrigin(c.req.raw)) return c.text("This form was sent from somewhere else.", 403);
+    if ((await deps.limiter.hit("alert:test", 60, now())) === 1) {
+      await deps.alerter.send("test", "Test alert. If you can read this, alerts reach you.");
+    }
+    return c.redirect("/mod?alert=sent", 303);
   });
 
   app.post("/mod/r/:id/:action", async (c) => {
