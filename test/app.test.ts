@@ -8,9 +8,9 @@ import { testApp } from "./helpers";
 
 describe("root", () => {
   it("redirects to the browser's language", async () => {
-    const res = await SELF.fetch("https://example.com/", { redirect: "manual", headers: { "Accept-Language": "ar-EG,ar;q=0.9,en;q=0.8" } });
+    const res = await SELF.fetch("https://example.com/", { redirect: "manual", headers: { "Accept-Language": "en-GB,en;q=0.9" } });
     expect(res.status).toBe(302);
-    expect(res.headers.get("location")).toBe("/ar");
+    expect(res.headers.get("location")).toBe("/en");
     expect(res.headers.get("vary")).toContain("Accept-Language");
   });
 
@@ -20,9 +20,9 @@ describe("root", () => {
     expect((await app.request("/")).headers.get("location")).toBe("/en");
   });
 
-  it("respects quality weights", async () => {
-    const res = await testApp().request("/", { headers: { "Accept-Language": "en;q=0.3, ar;q=0.9" } });
-    expect(res.headers.get("location")).toBe("/ar");
+  it("skips languages the interface does not have", async () => {
+    const res = await testApp().request("/", { headers: { "Accept-Language": "ar;q=0.9, en;q=0.3" } });
+    expect(res.headers.get("location")).toBe("/en");
   });
 });
 

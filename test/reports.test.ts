@@ -28,7 +28,6 @@ describe("the report button", () => {
     for (const s of ["Spam or advertising", "It asks for money", "It contains personal or contact details",
       "It is hateful, harmful, or not suitable for all ages", "Something else", "Send report"]) expect(form).toContain(s);
     expect(form).toContain('<meta name="robots" content="noindex"/>');
-    expect(await (await app.request(`/ar/r/${id}/report`)).text()).toContain("الإبلاغ عن هذا الطلب");
   });
 
   it("says so when the request is not on the wall", async () => {

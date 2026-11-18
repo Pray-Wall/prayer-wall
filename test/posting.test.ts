@@ -29,7 +29,6 @@ describe("the posting form", () => {
     const html = await (await app.request("/en/new")).text();
     expect(html).toContain("Your request will show your country: <strong>Indonesia</strong>");
     expect(html).toMatch(/<input type="checkbox" name="hide_country" value="1"\/> Hide my country/);
-    expect(await (await app.request("/ar/new")).text()).toContain("<strong>إندونيسيا</strong>");
     // Codes that are not countries (Tor is "T1", unknown is "XX") show nothing.
     for (const code of ["T1", "XX", "", "id"]) {
       app.state.country = code;
@@ -108,11 +107,6 @@ describe("a valid post", () => {
     expect((await stored())[0]).toMatchObject({ display_name: null, body: "Please pray for me.", lang: "en", country: null });
   });
 
-  it("takes the language from the page the request was posted from", async () => {
-    const app = testApp();
-    await app.post("/ar/new", { kind: "self", name: "", body: "أرجو أن تصلّوا من أجلي." });
-    expect((await stored())[0]!.lang).toBe("ar");
-  });
 
   it("shows the country on the card once published, in the reader's language", async () => {
     const app = testApp();
@@ -120,7 +114,6 @@ describe("a valid post", () => {
     await app.post("/en/new", VALID);
     await rows("UPDATE requests SET status = 'published', published_at = ?, expires_at = ?", NOW, NOW + 30 * DAY);
     expect(await (await app.request("/en")).text()).toContain("For someone else · <bdi>Grace</bdi> · Indonesia");
-    expect(await (await app.request("/ar")).text()).toContain("<bdi>Grace</bdi> · إندونيسيا");
   });
 });
 
@@ -146,10 +139,6 @@ describe("a refused post", () => {
     expect(await stored()).toEqual([]);
   });
 
-  it("explains in the interface language", async () => {
-    const res = await testApp().post("/ar/new", { ...VALID, body: "اتصل بي ٠٥٥١٢٣٤٥٦٧" });
-    expect(await res.text()).toContain("يُرجى حذف رقم الهاتف.");
-  });
 
   it("does not count against the posting limits", async () => {
     const app = testApp();

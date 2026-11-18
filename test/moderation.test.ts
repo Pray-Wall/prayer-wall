@@ -182,7 +182,6 @@ describe("a moderator's decisions", () => {
     const mine = await (await app.post("/en/mine", { token: token! })).text();
     expect(mine).toContain("This request was removed by a moderator.");
     expect(mine).toContain("It asked for money, gifts or business.");
-    expect(await (await app.post("/ar/mine", { token: token! })).text()).toContain("كان يطلب مالًا أو هدايا أو تعاملًا تجاريًا.");
     expect(bodies(await (await app.request("/en?view=new")).text())).toEqual([]);
     expect(await log()).toMatchObject([{ request_id: id, action: "remove", moderator: MOD, note: "money" }]);
   });

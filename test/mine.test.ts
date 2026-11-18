@@ -38,8 +38,8 @@ describe("the private page", () => {
   it("accepts the whole link pasted into the field", async () => {
     const app = testApp();
     const { token } = await postRequest(app);
-    const html = await (await app.post("/ar/mine", { token: `https://wall.example/en/mine#${token}` })).text();
-    expect(html).toContain("بانتظار المراجعة");
+    const html = await (await app.post("/en/mine", { token: `https://wall.example/en/mine#${token}` })).text();
+    expect(html).toContain("Waiting for review");
   });
 
   it("shows each status", async () => {

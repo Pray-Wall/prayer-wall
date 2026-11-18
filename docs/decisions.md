@@ -141,6 +141,13 @@ Accepted by the maintainer in the build prompt. The full text is in the blueprin
 | How does the signed-in identity reach the Worker? | Access adds a signed token in the `Cf-Access-Jwt-Assertion` header, and Cloudflare's docs say the Worker must still validate it. The Worker does. Source: Cloudflare One "Validate JWTs". |
 | Can Access protect only `/mod` on a `workers.dev` address? | Yes. A self-hosted application with the public hostname `prayer-wall.roman-alexandrovich-vega.workers.dev` and path `mod` (18 November) sends `/mod` to the Access sign-in while `/en` stays public. Team: `flat-haze-7f7b`; application "Prayer Wall moderation"; policy "Moderators" allows the maintainer's address. |
 
+## 18 November 2026: scope
+
+| Topic | Decision | Why |
+| --- | --- | --- |
+| Interface languages | **English only for now**, decided by the maintainer. `locales/ar.json` is removed; `/ar` and every other code redirect to `/en`. The language machinery, plural rules and right-to-left layout stay. | The maintainer worries a second script in the footer puts off English-speaking visitors, and wants the first wall small. Requests written in other languages are still accepted and shown in their own direction. |
+| Deputy's sign-in | Not added for now, by the maintainer's choice. Only the maintainer can open `/mod`. | Adding an address to the Access policy sends no email; one is sent only when that person signs in. Recorded so the gap is visible. |
+
 ## Proposed, awaiting the maintainer's decision
 
 The accepted 2.2 changes conflict with four later passages. None affects M0. Each needs a yes or no
