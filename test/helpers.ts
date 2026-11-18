@@ -5,6 +5,7 @@ import { D1RateLimiter } from "../src/adapters/cloudflare/ratelimit";
 import { createApp } from "../src/app";
 import type { Mode } from "../src/lib/posting";
 import type { BotVerdict } from "../src/lib/services";
+import type { Verdict } from "../src/lib/classifier-prompt";
 
 export const d1 = (env as unknown as { DB: D1Database }).DB;
 export const NOW = 1_800_000_000;
@@ -16,11 +17,15 @@ export const MASTER = "test-master-secret";
 export type TestApp = ReturnType<typeof testApp>;
 
 /** An app wired to the test database, with a clock, a network address and a bot check the test controls. */
-export function testApp(options: { mode?: Mode; configured?: boolean; noModeration?: boolean } = {}) {
+export function testApp(options: { mode?: Mode; configured?: boolean; noModeration?: boolean; noClassifier?: boolean } = {}) {
   const state = {
     now: NOW, ip: "203.0.113.7", bot: "pass" as BotVerdict, country: null as string | null,
     /** Who is signed in to /mod, or null. */
     moderator: null as string | null,
+    /** What the classifier answers: a verdict, null (unreadable), or "throw" (unavailable). */
+    verdict: { category: "ok", confidence: 0.99, crisis: false } as Verdict | null | "throw",
+    /** Every text the classifier was asked about. */
+    classified: [] as string[],
     /** What Math.random would return; fixes the shuffle in tests. */
     random: 0,
     alerts: [] as { kind: string; text: string }[],
@@ -34,6 +39,19 @@ export function testApp(options: { mode?: Mode; configured?: boolean; noModerati
     mode: options.mode ?? "review_all",
     moderatorAuth: options.noModeration ? null : { identify: async () => state.moderator },
     alerter: { send: async (kind, text) => void state.alerts.push({ kind, text }) },
+    classifier: options.noClassifier
+      ? null
+      : {
+          models: ["test-model"],
+          runner: {
+            run: async (_model: string, _system: string, user: string) => {
+              state.classified.push(user);
+              if (state.verdict === "throw") throw new Error("model unavailable");
+              return state.verdict === null ? "not json" : JSON.stringify(state.verdict);
+            },
+          },
+        },
+    thresholds: { normal: 0.9, strict: 0.97 },
     sourceUrl: "https://example.com/src",
     clientIp: () => state.ip,
     clientCountry: () => state.country,
@@ -105,7 +123,7 @@ export async function addRequest(s: Seed = {}): Promise<string> {
 export async function clearRequests() {
   await d1.batch([
     d1.prepare("DELETE FROM requests"), d1.prepare("DELETE FROM rate_limits"), d1.prepare("DELETE FROM reports"),
-    d1.prepare("DELETE FROM mod_log"), d1.prepare("DELETE FROM counters"),
+    d1.prepare("DELETE FROM mod_log"), d1.prepare("DELETE FROM counters"), d1.prepare("DELETE FROM events"),
   ]);
 }
 

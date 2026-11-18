@@ -114,3 +114,7 @@ textarea { resize: vertical; font: 18px/1.6 var(--serif); }
 .facts dd { margin: 0; }
 .buttons form { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .buttons select { inline-size: auto; }
+.facts-table { inline-size: 100%; border-collapse: collapse; font-size: 14px; }
+.facts-table th, .facts-table td { text-align: start; padding: 8px; border-block-end: 1px solid var(--line); }
+.support h2 { margin-block: 0 8px; }
+.support p + p { margin-block-start: 8px; }

@@ -2,6 +2,7 @@
 import type { FC } from "hono/jsx";
 import type { Lang, T } from "../lib/i18n";
 import type { MineResult } from "../lib/mine";
+import { SupportPanel } from "./support";
 
 /** The page before a token is known. wall.js fills the field from the part after "#" and submits. */
 export const MineEnter: FC<{ lang: Lang; t: T; message?: string }> = ({ lang, t, message }) => (
@@ -97,10 +98,18 @@ export const MinePage: FC<{ lang: Lang; t: T; result: Found; origin: string }> =
         </p>
       ) : null}
       <p class="notice" data-remember={token}>
-        <strong>{t(`status_${result.status}`)}</strong>
-        {/* A removal's reason category is shown to the author. */}
-        {result.status === "removed" && r.removeReason && r.removeReason !== "other" ? ` ${t(`removed_${r.removeReason}`)}` : null}
+        {/* A crisis request that was not published gets its own words, never a rule. */}
+        {result.status === "removed" && r.crisis ? (
+          t("crisis_not_published")
+        ) : (
+          <>
+            <strong>{t(`status_${result.status}`)}</strong>
+            {/* A removal's reason category is shown to the author. */}
+            {result.status === "removed" && r.removeReason && r.removeReason !== "other" ? ` ${t(`removed_${r.removeReason}`)}` : null}
+          </>
+        )}
       </p>
+      {r.crisis ? <SupportPanel t={t} /> : null}
       {text}
       <p class="who">
         {t.count("prayed", r.prayedCount)}

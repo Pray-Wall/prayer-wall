@@ -116,6 +116,39 @@ reopens posting at once.**
 During unusual reporting, three reports no longer hide a request; they flag it in the queue while
 it stays on the wall. This ends by itself after 60 quiet minutes.
 
+## Automatic moderation (the classifier)
+
+### Set it up, once
+
+1. Make sure the `CLOUDFLARE_API_TOKEN` secret has **Account → Workers AI → Read**.
+2. Run **Actions → Classifier test → Run workflow** with candidate Workers AI model ids and a
+   threshold. Read the report against the gate in `test/moderation-eval/README.md`.
+3. Put the chosen ids, comma-separated, in `CLASSIFIER_MODELS` in `wrangler.jsonc` and merge.
+   Record the run in `docs/decisions.md`.
+4. Watch `/mod?view=shadow` for a while: it compares the classifier with moderator decisions.
+5. Only then, and only with the support message approved and enough moderators, set `MODE` to `auto`.
+
+### It is failing (`classifier_errors`, `model_unavailable`)
+
+Requests are held, never published, so nothing unsafe happens; the queue just grows. Check the
+model id still exists in Cloudflare's model list; replace it or add a second id.
+
+### A burst of posts (`posting_burst`)
+
+In `auto` the site switches itself to `review_all`. When the burst is over, press **Return to auto**
+in `/mod`. Both steps are logged.
+
+### Weekly self-test (`self_test`)
+
+Runs Monday 03:17 UTC. If a rule-breaking or crisis example would be published, the stricter
+threshold applies until a moderator presses **Clear the stricter threshold** in `/mod`; fix the model
+or threshold first. `/healthz/ai` returns 200 only after a passing run in the last 8 days.
+
+### Crisis requests (`crisis`, `crisis_overdue`)
+
+A crisis request is held at the top of the queue and alerts at once. If it waits more than 6 hours,
+the alert repeats every 6 hours. Never contact the author.
+
 ## Pause posting
 
 Set `MODE` to `closed` in `wrangler.jsonc` and merge. Reading stays available. Set it back to `review_all` to reopen.

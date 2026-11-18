@@ -100,7 +100,7 @@ describe("the queue", () => {
     for (const s of [
       "For someone else · <bdi>Grace</bdi> · ID · written in: en",
       "Please pray for &lt;b&gt;Grace&lt;/b&gt;.",
-      "Not run (the classifier arrives in milestone 5)",
+      "<dt>Classifier</dt><dd>ok, 99%</dd>",
       "review_all mode: every request is reviewed",
       "<dt>Reports</dt><dd>None</dd>",
       "3 h 2 min",

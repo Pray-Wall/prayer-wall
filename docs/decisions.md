@@ -178,6 +178,25 @@ Accepted by the maintainer in the build prompt. The full text is in the blueprin
 | How HTML caching behaves on this site | The Cache API does nothing on `workers.dev` deployments, and is not available for Workers fronted by Access. Source: Cloudflare Workers "Cache" docs. Re-check with the custom domain in M7. |
 | Does the button work in a real browser? | Yes, locally in headless Chrome: the count changed at once, and after reloading the page the count and the pressed state were kept. |
 
+## 18 November 2026: Milestone 5
+
+| Topic | Decision | Why |
+| --- | --- | --- |
+| Where the classifier runs | Workers AI through the `AI` binding, behind a `ModelRunner` interface. Models are tried in the order given in `CLASSIFIER_MODELS`; an empty list means "not configured", and every request is held as `classifier_failed`. | Platform features behind interfaces; Revision 2.2, change 3 |
+| Model ids | **Not chosen yet.** The ids must be checked against Cloudflare's model list and the test set before `CLASSIFIER_MODELS` is filled in. | Model names and JSON support change; the build rule says verify first |
+| Test set | 150 invented examples **in English only** (60 fine, 62 rule-breaking of which 12 severe and 8 in other languages, 28 crisis), not the eight languages in the blueprint | The wall is English only (scope decision, 18 November) |
+| Thresholds | 0.9 normally, 0.97 when strict (unattended, or after a failed self-test). Both are variables. | Starting values; the test run decides the real ones |
+| Shadow running | In `review_all` every request is classified; the result is stored on the request and copied beside each moderator decision in `mod_log.shadow`. `/mod?view=shadow` compares the two. | Blueprint: run in shadow before trusting it |
+| Revise prompt | Only in `auto`, only once, only for fixable categories (contact, money, identifies, against others, preaching, not English) and never for crisis. Nothing is stored and no limit is counted. A second attempt or "Send it for review as it is" is held. | In `review_all` a person reads it anyway, so the prompt would only slow the author down |
+| Crisis | Never published automatically, priority 2, alert at once without the text, support panel on the confirmation and private page, no wording that says it was detected. A request that also breaks a fixed rule is refused for the rule with the panel beside the reason. Moderators can mark a request as crisis. | Blueprint crisis flow |
+| Support message | **Draft A, not yet approved.** It links to findahelpline.com. Someone with crisis-line experience must approve the wording before `auto` is switched on. | Blocker for leaving `review_all` |
+| Second check | The separate second-opinion adapter is **not built** | One model behind a strict gate is enough until real traffic shows a need |
+| Posting breaker | More than max(30, 5 × the 7-day average) posts in 10 minutes switches `auto` to `review_all` and alerts; only a moderator can switch back, and both are logged in `events`. The average is flat, not by time of day. | Too little history for a time-of-day average |
+| Classifier breaker | An alert when more than 20% of at least 10 calls in 10 minutes fail; a failing model alerts once a day and the next model is used | Revision 2.2, change 3 |
+| Weekly self-test | Monday 03:17 UTC: 10 fine, 10 rule-breaking and 3 crisis examples from the test set. A leak switches on the stricter threshold and alerts; a moderator clears it in `/mod`. `/healthz/ai` reports healthy only after a passing run in the last 8 days. | A smaller subset keeps the weekly cost near zero |
+| Unattended in `auto` | Posting stays open; only requests above the strict threshold are published, others are held and the author is told so. A crisis request's author is not promised that a person will read it soon. | Revision 2.2 |
+| Before switching to `auto` | The test run must pass the gate; the support message must be approved; at least 3 moderators should be active | Blueprint launch rules |
+
 ## Proposed, awaiting the maintainer's decision
 
 None open. (P1 to P7 were decided or lapsed by 18 November; see the entries above.)

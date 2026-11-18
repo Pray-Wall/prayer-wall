@@ -5,7 +5,9 @@ import type { Database } from "./lib/database";
 import { DEVICE_ID_PATTERN, dailyHasher } from "./lib/hashes";
 import { DEFAULT_LANG, getLang, pickLang, translator, type Lang, type T } from "./lib/i18n";
 import { openMine, parseAction } from "./lib/mine";
-import { submitRequest, type Mode } from "./lib/posting";
+import { submitRequest, type Mode, type Thresholds } from "./lib/posting";
+import { breakerOverride, clearOverride, setStrictForced, effectiveMode, strictForced } from "./lib/operating";
+import type { ClassifierDeps } from "./lib/classifier";
 import type { Alerter, BotCheck, ModeratorAuth, RateLimiter } from "./lib/services";
 import type { ModAction } from "./lib/database";
 import { QUEUE_PAGE, decide, isUnattended } from "./lib/moderation";
@@ -15,8 +17,10 @@ import { loadWall, parsePage, parseShuffle, parseView, someNeedy } from "./lib/w
 import { Confirmation, PostForm, PostingClosed, emptyForm, type FormValues } from "./views/form";
 import { Layout } from "./views/layout";
 import { MineEnter, MinePage } from "./views/mine";
-import { ModQueue, ModRemoved } from "./views/mod";
+import { ModQueue, ModRemoved, ModShadow } from "./views/mod";
 import { ReportForm, ReportNote } from "./views/report";
+import { SupportPage } from "./views/support";
+import { selfTestHealthy } from "./lib/self-test";
 import { RequestPage } from "./views/request";
 import { Wall } from "./views/wall";
 
@@ -31,6 +35,9 @@ export type AppDeps = {
   /** Null when moderator sign-in is not configured; /mod then does not exist. */
   moderatorAuth: ModeratorAuth | null;
   alerter: Alerter;
+  /** Null when no classifier is configured: every request is held. */
+  classifier: Omit<ClassifierDeps, "limiter" | "alerter"> | null;
+  thresholds: Thresholds;
   /** Link to the exact source of the running version (AGPL requirement). */
   sourceUrl: string;
   /** The visitor's network address. Used only to compute the daily visitor hash; never stored or logged. */
@@ -126,6 +133,9 @@ export function createApp(deps: AppDeps) {
     const who = await moderator(c);
     if (who instanceof Response) return who;
     const o = { title: "Moderation", noindex: true, hideAsk: true };
+    if (c.req.query("view") === "shadow") {
+      return page(c, english.lang, english.t, <ModShadow rows={await deps.db.shadowReport(now() - 30 * 86400)} days={30} />, o);
+    }
     if (c.req.query("view") === "removed") {
       return page(c, english.lang, english.t, <ModRemoved items={await deps.db.listRemoved(50)} />, o);
     }
@@ -139,9 +149,27 @@ export function createApp(deps: AppDeps) {
     ]);
     return page(
       c, english.lang, english.t,
-      <ModQueue moderator={who} items={items} waiting={summary.waiting} now={at} skip={skip} unattended={unattended} breaker={breaker} alertSent={c.req.query("alert") === "sent"} />,
+      <ModQueue moderator={who} items={items} waiting={summary.waiting} now={at} skip={skip} unattended={unattended} breaker={breaker} alertSent={c.req.query("alert") === "sent"}
+        mode={deps.mode} overridden={await breakerOverride(deps.db)} strict={await strictForced(deps.db)} />,
       o,
     );
+  });
+
+  // Returning from a breaker is always a manual, logged decision.
+  app.post("/mod/mode/restore", async (c) => {
+    const who = await moderator(c);
+    if (who instanceof Response) return who;
+    if (!isSameOrigin(c.req.raw)) return c.text("This form was sent from somewhere else.", 403);
+    await clearOverride(deps.db, who, now());
+    return c.redirect("/mod", 303);
+  });
+
+  app.post("/mod/strict/clear", async (c) => {
+    const who = await moderator(c);
+    if (who instanceof Response) return who;
+    if (!isSameOrigin(c.req.raw)) return c.text("This form was sent from somewhere else.", 403);
+    await setStrictForced(deps.db, false, who, now());
+    return c.redirect("/mod", 303);
   });
 
   // Lets a moderator check that alerts arrive. At most once a minute.
@@ -161,11 +189,18 @@ export function createApp(deps: AppDeps) {
     if (!isSameOrigin(c.req.raw)) return c.text("This form was sent from somewhere else.", 403);
     const id = c.req.param("id");
     const action = c.req.param("action");
-    if (!REQUEST_ID.test(id) || !["publish", "remove", "restore", "escalate"].includes(action)) return c.notFound();
+    if (!REQUEST_ID.test(id) || !["publish", "remove", "restore", "escalate", "mark_crisis"].includes(action)) return c.notFound();
     const form = await c.req.parseBody();
     await decide({ db: deps.db, limiter: deps.limiter }, { id, action: action as ModAction, moderator: who, removeReason: field(form, "reason"), now: now() });
     const skip = skipped(field(form, "skip"));
     return c.redirect(action === "restore" ? "/mod?view=removed" : `/mod${skip.length ? `?skip=${skip.join(",")}` : ""}`, 303);
+  });
+
+  // Pass or fail only (Revision 2.2, change 3).
+  app.get("/healthz/ai", async (c) => {
+    const ok = deps.classifier !== null && (await selfTestHealthy(deps.db, now()));
+    c.header("Cache-Control", "no-store");
+    return c.json({ ok }, ok ? 200 : 503);
   });
 
   app.get("/:lang", async (c) => {
@@ -188,9 +223,17 @@ export function createApp(deps: AppDeps) {
 
   // ---- Ask for prayer ----
 
-  // Posting pauses when it is closed, not configured, or when nobody is moderating (`unattended`).
-  const postingOpen = async () =>
-    deps.mode !== "closed" && deps.botCheck !== null && deps.masterSecret !== null && !(await isUnattended(deps.db, now()));
+  /**
+   * Posting pauses when it is closed or not configured. When nobody is moderating (`unattended`) it stays
+   * open in `auto` with the stricter threshold; in `review_all` nothing could ever be published, so it pauses.
+   */
+  const postingState = async () => {
+    const mode = await effectiveMode(deps.db, deps.mode);
+    const unattended = await isUnattended(deps.db, now());
+    const open = mode !== "closed" && deps.botCheck !== null && deps.masterSecret !== null && !(unattended && mode !== "auto");
+    return { open, mode, unattended };
+  };
+  const postingOpen = async () => (await postingState()).open;
 
   app.get("/:lang/new", async (c) => {
     const l = await withLang(c);
@@ -205,7 +248,8 @@ export function createApp(deps: AppDeps) {
     if (l instanceof Response) return l;
     const { lang, t } = l;
     const o = { title: t("ask_for_prayer"), hideAsk: true, noindex: true };
-    if (!(await postingOpen())) return page(c, lang, t, <PostingClosed lang={lang} t={t} />, o);
+    const state = await postingState();
+    if (!state.open) return page(c, lang, t, <PostingClosed lang={lang} t={t} />, o);
 
     const form = await c.req.parseBody();
     const values: FormValues = {
@@ -215,13 +259,22 @@ export function createApp(deps: AppDeps) {
       hideCountry: field(form, "hide_country") === "1",
     };
     // A refused post comes back with everything the author typed and one plain sentence.
-    const refuse = (error: string, status: 403 | 422 | 429) =>
-      page(c, lang, t, <PostForm lang={lang} t={t} values={values} country={deps.clientCountry(c.req.raw)} error={error} siteKey={deps.botCheck!.siteKey} />, { ...o, botCheck: true, status });
+    const again = (extra: { error?: string; revise?: string; crisis?: boolean }, status: 200 | 403 | 422 | 429) =>
+      page(
+        c, lang, t,
+        <PostForm lang={lang} t={t} values={values} country={deps.clientCountry(c.req.raw)} siteKey={deps.botCheck!.siteKey} {...extra} />,
+        { ...o, botCheck: true, status },
+      );
+    const refuse = (error: string, status: 403 | 422 | 429, crisis = false) => again({ error, crisis }, status);
 
     if (!isSameOrigin(c.req.raw)) return refuse("origin", 403);
     const device = field(form, "device");
     const result = await submitRequest(
-      { db: deps.db, limiter: deps.limiter, botCheck: deps.botCheck!, masterSecret: deps.masterSecret! },
+      {
+        db: deps.db, limiter: deps.limiter, botCheck: deps.botCheck!, masterSecret: deps.masterSecret!, alerter: deps.alerter,
+        classifier: deps.classifier, mode: state.mode, configuredMode: deps.mode, thresholds: deps.thresholds,
+        strict: await strictForced(deps.db), unattended: state.unattended,
+      },
       {
         ...values,
         // The request is taken to be written in the language of the page it was posted from.
@@ -230,10 +283,12 @@ export function createApp(deps: AppDeps) {
         deviceId: DEVICE_ID_PATTERN.test(device) ? device : null,
         botResponse: field(form, "cf-turnstile-response") || undefined,
         ip: deps.clientIp(c.req.raw),
+        attempt: field(form, "as_is") === "1" ? "as_is" : field(form, "attempt") === "2" ? 2 : 1,
       },
       now(),
     );
-    if (!result.ok) return refuse(result.error, result.error === "too_many" ? 429 : 422);
+    if (!result.ok && "revise" in result) return again({ revise: result.revise }, 200);
+    if (!result.ok) return refuse(result.error, result.error === "too_many" ? 429 : 422, result.crisis);
 
     // The token goes after "#", so it never reaches a server log, an analytics tool or a referrer.
     const link = `${new URL(c.req.url).origin}/${lang.code}/mine#${result.token}`;
@@ -241,9 +296,18 @@ export function createApp(deps: AppDeps) {
     const waiting = await someNeedy(deps.db, 3, null, at, random);
     return page(
       c, lang, t,
-      <Confirmation lang={lang} t={t} link={link} token={result.token} id={result.id} waiting={waiting} now={at} />,
+      <Confirmation
+        lang={lang} t={t} link={link} token={result.token} id={result.id} waiting={waiting} now={at}
+        published={result.status === "published"} crisis={result.crisis} declined={result.declined} unattended={state.unattended}
+      />,
       { title: t("confirm_title"), noindex: true },
     );
+  });
+
+  app.get("/:lang/support", async (c) => {
+    const l = await withLang(c);
+    if (l instanceof Response) return l;
+    return page(c, l.lang, l.t, <SupportPage lang={l.lang} t={l.t} />, { title: l.t("support_title") });
   });
 
   // ---- My request ----

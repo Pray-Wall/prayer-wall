@@ -438,5 +438,85 @@
   "status_answered": {
     "message": "A request you prayed for was answered.",
     "description": "Quiet line at the top of the wall, shown once per answered request, on a device that prayed for it."
+  },
+  "support_link": {
+    "message": "Need to talk to someone now?",
+    "description": "Quiet link on every confirmation page, to the support page."
+  },
+  "support_title": {
+    "message": "You are not alone",
+    "description": "Heading of the support panel and the support page."
+  },
+  "support_body": {
+    "message": "Thank you for trusting us with this. What you are carrying sounds very heavy, and you do not have to carry it alone. Your request has been received, and a person will read it with care.",
+    "description": "Support message, first paragraph. DRAFT A from the blueprint, NOT YET APPROVED by a person with crisis-line experience. Never machine-translate."
+  },
+  "support_body_unattended": {
+    "message": "Thank you for trusting us with this. What you are carrying sounds very heavy, and you do not have to carry it alone. Your request has been received.",
+    "description": "The same paragraph while no moderator is active: it must not promise that a person will read it soon. DRAFT, not yet approved."
+  },
+  "support_help": {
+    "message": "If you are thinking about ending your life, or you are not safe, please also talk with someone who can be with you right now. Free and confidential helplines are open in most countries.",
+    "description": "Support message, second paragraph. DRAFT, not yet approved."
+  },
+  "support_find": {
+    "message": "Find a helpline where you are",
+    "description": "Link to the international helpline directory."
+  },
+  "support_emergency": {
+    "message": "If you are in immediate danger, please call your local emergency number.",
+    "description": "Support message, last line. DRAFT, not yet approved."
+  },
+  "support_page_intro": {
+    "message": "This wall is not an emergency or counselling service, and moderators cannot reply to anyone. If you need to talk with someone now, a helpline can help.",
+    "description": "Support page: the limits stated plainly."
+  },
+  "crisis_not_published": {
+    "message": "We could not show this request on the wall as it was written, but a person has read it and you are not forgotten. You are welcome to post again without describing how.",
+    "description": "Private page when a crisis request was not published. Replaces the removal reason."
+  },
+  "published_now": {
+    "message": "Your request is on the wall, and people can pray for it.",
+    "description": "Confirmation page when the request was published at once."
+  },
+  "declined_unattended": {
+    "message": "We cannot show this request automatically right now. You are welcome to reword it and try again.",
+    "description": "Confirmation page in unattended mode for a request the site cannot publish and no person can review soon."
+  },
+  "revise_title": {
+    "message": "Could you change one thing?",
+    "description": "Heading above the revise prompt. The author's text is kept."
+  },
+  "revise_contact": {
+    "message": "The wall cannot carry contact details, addresses or links. Could you take them out?",
+    "description": "Revise prompt: contact details."
+  },
+  "revise_money": {
+    "message": "The wall cannot carry requests for money or gifts. You can still ask for prayer about the need itself.",
+    "description": "Revise prompt: money."
+  },
+  "revise_identifies": {
+    "message": "This may identify another person. Could you use a first name only and leave out details that point to them?",
+    "description": "Revise prompt: identifies someone."
+  },
+  "revise_against_others": {
+    "message": "The wall is a place of peace. Could you ask for prayer without speaking against any person, group or faith?",
+    "description": "Revise prompt: against others."
+  },
+  "revise_preaching": {
+    "message": "The wall is for prayer to God, not for preaching or debate. Could you rephrase this as a request or a thanksgiving?",
+    "description": "Revise prompt: preaching."
+  },
+  "revise_not_english": {
+    "message": "The wall supports English only at the moment. Could you write your request in English?",
+    "description": "Revise prompt: not in English. Wording asked for by the maintainer."
+  },
+  "revise_edit": {
+    "message": "Edit my request",
+    "description": "Link that moves to the text field to edit it."
+  },
+  "revise_as_is": {
+    "message": "Send it for review as it is",
+    "description": "Button that sends the request unchanged; a person then decides."
   }
 }

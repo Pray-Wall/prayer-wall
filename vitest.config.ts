@@ -6,6 +6,8 @@ export default defineConfig({
   plugins: [
     cloudflareTest(async () => ({
       wrangler: { configPath: "./wrangler.jsonc" },
+      // Tests never call Workers AI: the classifier is faked in test/helpers.ts.
+      remoteBindings: false,
       miniflare: {
         // Handed to test/apply-migrations.ts so every test file starts with the real schema.
         bindings: { TEST_MIGRATIONS: await readD1Migrations("./migrations") },
