@@ -12,6 +12,7 @@ export type WallRequest = {
   prayedCount: number;
   reachCount: number;
   publishedAt: number;
+  answeredAt: number | null;
 };
 
 /** Position after the last row of a page; rows strictly after it come next. */
@@ -123,6 +124,25 @@ export interface Database {
   extendOnce(ownerHash: string, seconds: number, now: number): Promise<boolean>;
   /** A real delete, not a hidden flag. False when no such request exists. */
   deleteByOwnerHash(ownerHash: string): Promise<boolean>;
+
+  /** One published, unexpired, non-test request, or null. */
+  getPublished(id: string, now: number): Promise<WallRequest | null>;
+
+  // ---- Prayers ----
+
+  /**
+   * Records one tap. `who` is the daily device hash (or the visitor hash), `vhash` the daily visitor hash.
+   * A second tap with the same `who` on the same request changes nothing. When `counted` is false the tap
+   * is stored but adds nothing. Reach rises only for the first counted prayer from `vhash`.
+   * Returns the count to show, or null when the request is not on the wall.
+   */
+  recordPrayer(p: { requestId: string; who: string; vhash: string; counted: boolean; now: number }): Promise<number | null>;
+  /** How many counted prayers this visitor hash has given this request (today, since hashes are daily). */
+  countedFromVisitor(requestId: string, vhash: string): Promise<number>;
+  /** Counts and answered flags for published requests among `ids`. Unknown or unpublished ids are left out. */
+  statusOf(ids: string[], now: number): Promise<{ id: string; prayed: number; answered: boolean }[]>;
+  /** The hourly clean-up. Returns how many requests were deleted. */
+  cleanUp(now: number): Promise<number>;
 
   // ---- Moderation ----
 

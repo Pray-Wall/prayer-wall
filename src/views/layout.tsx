@@ -14,16 +14,27 @@ type Props = {
   botCheck?: boolean;
   /** Hides the "Ask for prayer" button, e.g. on the form itself. */
   hideAsk?: boolean;
+  /** Link preview for a shared request. It never contains request text. */
+  preview?: { title: string; text: string };
   children?: Child;
 };
 
-export const Layout: FC<Props> = ({ lang, t, sourceUrl, title, noindex, botCheck, hideAsk, children }) => (
+export const Layout: FC<Props> = ({ lang, t, sourceUrl, title, noindex, botCheck, hideAsk, preview, children }) => (
   <html lang={lang.code} dir={lang.dir}>
     <head>
       <meta charset="utf-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1" />
       <meta name="color-scheme" content="light dark" />
-      {noindex ? <meta name="robots" content="noindex" /> : <meta name="description" content={t("meta_description")} />}
+      {noindex ? <meta name="robots" content="noindex" /> : null}
+      <meta name="description" content={preview?.text ?? t("meta_description")} />
+      {preview ? (
+        <>
+          <meta property="og:title" content={preview.title} />
+          <meta property="og:description" content={preview.text} />
+          <meta property="og:type" content="website" />
+          <meta name="twitter:card" content="summary" />
+        </>
+      ) : null}
       <title>{title ? `${title} · ${t("app_name")}` : t("app_name")}</title>
       <link rel="stylesheet" href="/style.css" />
       <script src="/wall.js" defer></script>
@@ -51,17 +62,20 @@ export const Layout: FC<Props> = ({ lang, t, sourceUrl, title, noindex, botCheck
       </header>
       <main id="main">{children}</main>
       <footer class="foot">
+        {/* The language list appears once there is more than one language. */}
+        {LANGS.length > 1 ? (
         <nav aria-label={t("language")}>
-          <ul class="langs">
-            {LANGS.map((l) => (
-              <li>
-                <a href={`/${l.code}`} lang={l.code} hreflang={l.code} aria-current={l.code === lang.code ? "true" : undefined}>
-                  {l.name}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </nav>
+            <ul class="langs">
+              {LANGS.map((l) => (
+                <li>
+                  <a href={`/${l.code}`} lang={l.code} hreflang={l.code} aria-current={l.code === lang.code ? "true" : undefined}>
+                    {l.name}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        ) : null}
         <p>
           <a href={sourceUrl}>{t("source_code")}</a>
         </p>

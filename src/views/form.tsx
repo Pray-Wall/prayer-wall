@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import type { FC } from "hono/jsx";
+import type { WallRequest } from "../lib/database";
 import { countryName, type Lang, type T } from "../lib/i18n";
+import { CardList } from "./card";
 import { MAX_BODY, MAX_NAME } from "../lib/rules";
 
 export type FormValues = { kind: string; name: string; body: string; hideCountry: boolean };
@@ -86,10 +88,12 @@ export const PostingClosed: FC<{ lang: Lang; t: T }> = ({ lang, t }) => (
   </>
 );
 
-export const Confirmation: FC<{ lang: Lang; t: T; link: string; token: string }> = ({ lang, t, link, token }) => (
+type ConfirmationProps = { lang: Lang; t: T; link: string; token: string; id: string; waiting: WallRequest[]; now: number };
+
+export const Confirmation: FC<ConfirmationProps> = ({ lang, t, link, token, id, waiting, now }) => (
   <>
     <h1>{t("confirm_title")}</h1>
-    <div class="notice stack" data-remember={token}>
+    <div class="notice stack" data-remember={token} data-posted={id}>
       <div>
         <label for="link">{t("confirm_link")}</label>
         <input id="link" value={link} readonly dir="ltr" />
@@ -104,6 +108,13 @@ export const Confirmation: FC<{ lang: Lang; t: T; link: string; token: string }>
         </a>
       </p>
     </div>
+    {/* Pray while you wait (Revision 2.2, change 5). Nothing about the author's request depends on it. */}
+    {waiting.length ? (
+      <>
+        <h2>{t("wait_title")}</h2>
+        <CardList rows={waiting} t={t} lang={lang} now={now} back={`/${lang.code}`} />
+      </>
+    ) : null}
     <p>
       <a href={`/${lang.code}`}>{t("back_to_wall")}</a>
     </p>

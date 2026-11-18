@@ -2,7 +2,7 @@
 import { Hono, type Context } from "hono";
 import type { Child } from "hono/jsx";
 import type { Database } from "./lib/database";
-import { DEVICE_ID_PATTERN } from "./lib/hashes";
+import { DEVICE_ID_PATTERN, dailyHasher } from "./lib/hashes";
 import { DEFAULT_LANG, getLang, pickLang, translator, type Lang, type T } from "./lib/i18n";
 import { openMine, parseAction } from "./lib/mine";
 import { submitRequest, type Mode } from "./lib/posting";
@@ -10,12 +10,14 @@ import type { Alerter, BotCheck, ModeratorAuth, RateLimiter } from "./lib/servic
 import type { ModAction } from "./lib/database";
 import { QUEUE_PAGE, decide, isUnattended } from "./lib/moderation";
 import { breakerActive, fileReport, isReportReason } from "./lib/reports";
-import { loadWall, parseView } from "./lib/wall";
+import { PRAYER_LIMITS, parseIds, pray } from "./lib/prayers";
+import { loadWall, parsePage, parseShuffle, parseView, someNeedy } from "./lib/wall";
 import { Confirmation, PostForm, PostingClosed, emptyForm, type FormValues } from "./views/form";
 import { Layout } from "./views/layout";
 import { MineEnter, MinePage } from "./views/mine";
 import { ModQueue, ModRemoved } from "./views/mod";
 import { ReportForm, ReportNote } from "./views/report";
+import { RequestPage } from "./views/request";
 import { Wall } from "./views/wall";
 
 export type AppDeps = {
@@ -40,6 +42,8 @@ export type AppDeps = {
   clientCountry: (request: Request) => string | null;
   /** Current time in Unix seconds; injectable for tests. */
   now?: () => number;
+  /** Random numbers in [0, 1); injectable for tests. */
+  random?: () => number;
 };
 
 const LOOKS_LIKE_LANG = /^[a-z]{2,3}(-[a-z0-9]{2,8})?$/i;
@@ -64,12 +68,16 @@ const field = (form: Record<string, unknown>, name: string): string => {
 export function createApp(deps: AppDeps) {
   const app = new Hono();
   const now = deps.now ?? (() => Math.floor(Date.now() / 1000));
+  const random = deps.random ?? Math.random;
 
-  type PageOptions = { title?: string; noindex?: boolean; botCheck?: boolean; hideAsk?: boolean; status?: 200 | 403 | 404 | 422 | 429 };
+  type PageOptions = {
+    title?: string; noindex?: boolean; botCheck?: boolean; hideAsk?: boolean; status?: 200 | 403 | 404 | 422 | 429;
+    preview?: { title: string; text: string };
+  };
   const page = (c: Context, lang: Lang, t: T, body: Child, o: PageOptions = {}) => {
     if (o.noindex) c.header("Cache-Control", "no-store");
     const html = (
-      <Layout lang={lang} t={t} sourceUrl={deps.sourceUrl} title={o.title} noindex={o.noindex} botCheck={o.botCheck} hideAsk={o.hideAsk}>
+      <Layout lang={lang} t={t} sourceUrl={deps.sourceUrl} title={o.title} noindex={o.noindex} botCheck={o.botCheck} hideAsk={o.hideAsk} preview={o.preview}>
         {body}
       </Layout>
     );
@@ -165,8 +173,17 @@ export function createApp(deps: AppDeps) {
     if (l instanceof Response) return l;
     const view = parseView(c.req.query("view"));
     const at = now();
-    const wall = await loadWall(deps.db, view, c.req.query("after"), at);
-    return page(c, l.lang, l.t, <Wall lang={l.lang} t={l.t} view={view} page={wall} now={at} />);
+    const wall = await loadWall(
+      deps.db,
+      { view, after: c.req.query("after"), shuffle: parseShuffle(c.req.query("s"), random), page: parsePage(c.req.query("p")) },
+      at,
+    );
+    // The same page for everyone, so it can be cached at the edge for 45 seconds once the project has
+    // its own domain (the cache does not run on workers.dev). Browsers always ask again.
+    c.header("Cloudflare-CDN-Cache-Control", "max-age=45");
+    c.header("Cache-Control", "no-cache");
+    const url = new URL(c.req.url);
+    return page(c, l.lang, l.t, <Wall lang={l.lang} t={l.t} view={view} page={wall} now={at} self={url.pathname + url.search} />);
   });
 
   // ---- Ask for prayer ----
@@ -220,7 +237,13 @@ export function createApp(deps: AppDeps) {
 
     // The token goes after "#", so it never reaches a server log, an analytics tool or a referrer.
     const link = `${new URL(c.req.url).origin}/${lang.code}/mine#${result.token}`;
-    return page(c, lang, t, <Confirmation lang={lang} t={t} link={link} token={result.token} />, { title: t("confirm_title"), noindex: true });
+    const at = now();
+    const waiting = await someNeedy(deps.db, 3, null, at, random);
+    return page(
+      c, lang, t,
+      <Confirmation lang={lang} t={t} link={link} token={result.token} id={result.id} waiting={waiting} now={at} />,
+      { title: t("confirm_title"), noindex: true },
+    );
   });
 
   // ---- My request ----
@@ -249,7 +272,75 @@ export function createApp(deps: AppDeps) {
     );
     if (result.state === "too_many") return page(c, lang, t, <MineEnter lang={lang} t={t} message="mine_too_many" />, { ...o, status: 429 });
     if (result.state === "not_found") return page(c, lang, t, <MineEnter lang={lang} t={t} message="mine_not_found" />, { ...o, status: 404 });
-    return page(c, lang, t, <MinePage lang={lang} t={t} result={result} />, o);
+    return page(c, lang, t, <MinePage lang={lang} t={t} result={result} origin={new URL(c.req.url).origin} />, o);
+  });
+
+  // ---- Shared links and "I prayed" ----
+
+  // The address to share has no language in it (Revision 2.2, change 6).
+  app.get("/r/:id", (c) => {
+    const id = c.req.param("id");
+    if (!REQUEST_ID.test(id)) return c.notFound();
+    return c.redirect(`/${pickLang(c.req.header("Accept-Language"))}/r/${id}`, 302);
+  });
+
+  app.get("/:lang/r/:id", async (c) => {
+    const l = await withLang(c);
+    if (l instanceof Response) return l;
+    const id = c.req.param("id");
+    const at = now();
+    const request = REQUEST_ID.test(id) ? await deps.db.getPublished(id, at) : null;
+    const more = await someNeedy(deps.db, 3, request?.id ?? null, at, random);
+    const preview = {
+      title: request?.displayName ? l.t("preview_named").replace("{name}", request.displayName) : l.t("preview_plain"),
+      text: l.t("preview_text"),
+    };
+    const url = new URL(c.req.url);
+    // Kept out of search engines: a request belongs on the wall, not in search results.
+    return page(c, l.lang, l.t, <RequestPage lang={l.lang} t={l.t} request={request} more={more} now={at} self={url.pathname} />, {
+      title: preview.title, noindex: true, preview, status: request ? 200 : 404,
+    });
+  });
+
+  const prayFrom = async (c: Context, id: string, device: string) =>
+    deps.masterSecret === null || !REQUEST_ID.test(id)
+      ? null
+      : pray(
+          { db: deps.db, limiter: deps.limiter, masterSecret: deps.masterSecret },
+          { requestId: id, ip: deps.clientIp(c.req.raw), deviceId: DEVICE_ID_PATTERN.test(device) ? device : null },
+          now(),
+        );
+
+  // The button's background request. A custom header plus Sec-Fetch-Site stops simple cross-site forms.
+  app.post("/api/r/:id/prayed", async (c) => {
+    c.header("Cache-Control", "no-store");
+    if (!isSameOrigin(c.req.raw) || c.req.header("X-Prayer-Wall") !== "1") return c.json({ error: "forbidden" }, 403);
+    const body = await c.req.json<{ device?: unknown }>().catch(() => ({ device: undefined }));
+    const count = await prayFrom(c, c.req.param("id"), typeof body.device === "string" ? body.device : "");
+    return count === null ? c.json({ error: "not_found" }, 404) : c.json({ count });
+  });
+
+  // The same, as a plain form, for browsers without script. It returns to the page it came from.
+  app.post("/:lang/r/:id/prayed", async (c) => {
+    const l = await withLang(c);
+    if (l instanceof Response) return l;
+    if (!isSameOrigin(c.req.raw)) return c.text("This form was sent from somewhere else.", 403);
+    const form = await c.req.parseBody();
+    await prayFrom(c, c.req.param("id"), field(form, "device"));
+    const back = field(form, "back");
+    const safe = back.startsWith(`/${l.lang.code}`) && !back.startsWith("//") && !back.includes("\\") ? back : `/${l.lang.code}`;
+    return c.redirect(safe, 303);
+  });
+
+  // "Your prayers" (Revision 2.2, change 7): counts and answered flags for ids this device remembers.
+  app.get("/api/status", async (c) => {
+    c.header("Cache-Control", "no-store");
+    if (deps.masterSecret === null) return c.json({ requests: [] });
+    const visitor = await (await dailyHasher(deps.masterSecret, now())).visitor(deps.clientIp(c.req.raw));
+    if ((await deps.limiter.hit(`status:${visitor}`, 3600, now())) > PRAYER_LIMITS.statusPerVisitorHour) {
+      return c.json({ requests: [] }, 429);
+    }
+    return c.json({ requests: await deps.db.statusOf(parseIds(c.req.query("ids")), now()) });
   });
 
   // ---- Report a request ----

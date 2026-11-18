@@ -120,6 +120,20 @@ it stays on the wall. This ends by itself after 60 quiet minutes.
 
 Set `MODE` to `closed` in `wrangler.jsonc` and merge. Reading stays available. Set it back to `review_all` to reopen.
 
+## Clean-up (every 30 minutes)
+
+The scheduled job deletes, for real:
+
+| What | When |
+| --- | --- |
+| A published request | When it expires (30 days, or 60 if the author extended it) |
+| A held request nobody reviewed | 14 days after posting (never a held crisis request) |
+| A removed request | 30 days after removal |
+| `prayers` and `rate_limits` rows | After 48 hours |
+| Reports and prayers of a deleted request | With the request |
+
+`mod_log` and the totals in `counters` are kept; they hold no request text.
+
 ## Database changes
 
 Schema changes are numbered SQL files in `migrations/`. The Deploy workflow applies any new ones

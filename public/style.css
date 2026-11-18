@@ -49,7 +49,10 @@ h1 { font-size: 28px; font-weight: 600; line-height: 1.25; margin-block: 16px; }
 .card p { margin: 0; }
 .who, .row { color: var(--muted); font-size: 14px; }
 .text { font: 18px/1.6 var(--serif); margin-block: 8px 12px !important; overflow-wrap: anywhere; white-space: pre-line; }
-.row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.pray { display: flex; align-items: center; gap: 12px; margin: 0; }
+.lead { font-size: 18px; margin-block: 8px 16px; }
+h2 { font-size: 20px; font-weight: 600; margin-block: 32px 12px; }
 
 /* Card menu: closed by default, opens without script */
 .menu { margin-block-start: 8px; color: var(--muted); font-size: 14px; }

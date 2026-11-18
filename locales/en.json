@@ -52,7 +52,7 @@
     "description": "Link at the bottom of the wall that loads the next 20 requests."
   },
   "empty": {
-    "message": "There are no requests here yet.",
+    "message": "No requests are waiting right now. Be the first to ask, and someone will pray for you.",
     "description": "Shown when the wall has nothing to show."
   },
   "language": {
@@ -378,5 +378,65 @@
   "removed_not_english": {
     "message": "It was not written in English. The wall supports English only at the moment.",
     "description": "Private page: why a moderator removed the request."
+  },
+  "i_prayed": {
+    "message": "I prayed",
+    "description": "The button on every request. Not 'Like' or 'Amen'."
+  },
+  "i_prayed_done": {
+    "message": "You prayed",
+    "description": "Screen-reader label of the button after this device prayed today."
+  },
+  "answered": {
+    "message": "Answered",
+    "description": "Small label on a card whose author marked it answered."
+  },
+  "wait_title": {
+    "message": "While your request waits, these people are waiting too.",
+    "description": "Heading above three requests on the confirmation page."
+  },
+  "shared_intro": {
+    "message": "Someone asked for prayer here. No account is needed.",
+    "description": "First line of the page a shared link opens."
+  },
+  "shared_ended": {
+    "message": "This request has ended. Others are waiting for prayer.",
+    "description": "Shared-link page when the request has expired, been removed, or is not published."
+  },
+  "more_requests": {
+    "message": "More requests",
+    "description": "Heading above three more requests on the shared-link page."
+  },
+  "share_title": {
+    "message": "Ask others to pray",
+    "description": "Button on the private page once a request is published; opens the share sheet or copies the link."
+  },
+  "share_help": {
+    "message": "Share this link with family or a group. It opens your request, with nothing about you.",
+    "description": "Text beside the share link on the private page."
+  },
+  "preview_named": {
+    "message": "Pray for {name}",
+    "description": "Link preview title when the request has a first name. Never contains request text."
+  },
+  "preview_plain": {
+    "message": "A prayer request",
+    "description": "Link preview title without a first name."
+  },
+  "preview_text": {
+    "message": "Tap to read and pray. No account needed.",
+    "description": "Link preview description. Never contains request text."
+  },
+  "status_mine": {
+    "message": "People prayed {n} times for your request.",
+    "description": "Quiet line at the top of the wall, shown on the device that posted, when the count has grown."
+  },
+  "status_mine_one": {
+    "message": "Someone prayed for your request.",
+    "description": "The same line when the count is 1."
+  },
+  "status_answered": {
+    "message": "A request you prayed for was answered.",
+    "description": "Quiet line at the top of the wall, shown once per answered request, on a device that prayed for it."
   }
 }
