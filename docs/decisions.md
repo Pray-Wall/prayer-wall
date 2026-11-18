@@ -146,18 +146,16 @@ Accepted by the maintainer in the build prompt. The full text is in the blueprin
 | Topic | Decision | Why |
 | --- | --- | --- |
 | Interface languages | **English only for now**, decided by the maintainer. `locales/ar.json` is removed; `/ar` and every other code redirect to `/en`. The language machinery, plural rules and right-to-left layout stay. | The maintainer worries a second script in the footer puts off English-speaking visitors, and wants the first wall small. Requests written in other languages are still accepted and shown in their own direction. |
+| Request language | **English only**, decided by the maintainer. The form asks for English ("In English, up to 500 characters."); a moderator removes other languages with the reason "Not in English", which the author sees. In M5 the classifier will also report whether a request is in English, and a non-English request gets the revise prompt. | One language is enough to start with (well over a billion people read English), and it removes the most expensive remaining work. |
+| Milestone 6 (translation) | **Dropped from version 1.** Revision 2.2 change 4 (eager translation set, "Translation looks wrong") lapses with it, and the queue's "English translation" line goes. | Follows from English-only requests. Can return as a later milestone if the wall adds languages. |
+| Proposals P5, P6, P7 | **Accepted** (P5, P7); P6 is replaced by the English check above | The maintainer agreed to server-rendered forms for the private page, reports and moderator actions. "I prayed" (M4) will use a background request with a form as fallback, as the blueprint says. |
 | Deputy's sign-in | Not added for now, by the maintainer's choice. Only the maintainer can open `/mod`. | Adding an address to the Access policy sends no email; one is sent only when that person signs in. Recorded so the gap is visible. |
 
 ## Proposed, awaiting the maintainer's decision
 
-The accepted 2.2 changes conflict with four later passages. None affects M0. Each needs a yes or no
-before the milestone named.
+Each needs a yes or no before the milestone named. (P4 lapsed with translation on 18 November.)
 
 | # | Conflict | Proposal | Needed by |
 | --- | --- | --- | --- |
 | P2 | The build prompt keeps the soft Turnstile challenge on prayers "off by default (or anomaly-only)", but change 9 removes the anomaly flag | Build it behind a configuration switch that is off, with no automatic trigger | M4 |
-| P7 | The blueprint's API table has `POST /api/r/{id}/report`; M3 uses a report page at `/{lang}/r/{id}/report` (see Milestone 3) | Keep the server-rendered page | M3 review |
-| P5 | The blueprint's API table has `POST /api/mine`; M2 posts the token to `/{lang}/mine` instead (see Milestone 2) | Keep the server-rendered form post | M2 review |
-| P6 | With no "Written in" list, the recorded language can be wrong (see Milestone 2) | Have the classifier return the detected language in the same call (M5) and store that; translation (M6) then uses it. Until M5, a moderator sees the text and nothing depends on the field. | M5 |
 | P3 | Change 6 makes `/r/{id}` the address to share; the API table lists `/{lang}/r/{id}` | `/r/{id}` redirects to `/{lang}/r/{id}`, which stays the rendered page | M4 |
-| P4 | The build prompt's summary of change 4 omits the cap on the eager set | Use the cap of 8 from the 2.2 text | M6 |

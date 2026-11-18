@@ -14,7 +14,7 @@ const stored = () => rows<Row>("SELECT * FROM requests ORDER BY created_at, rowi
 describe("the posting form", () => {
   it("shows every field, the three rules and the bot check", async () => {
     const html = await (await testApp().request("/en/new")).text();
-    for (const s of ["Who is this for?", "Myself", "Someone else", "An event or group", "First name (optional)", "Your request", "No contact details or links.", "No requests for money.", "No preaching or arguing.",
+    for (const s of ["Who is this for?", "Myself", "Someone else", "An event or group", "First name (optional)", "Your request", "In English, up to 500 characters.", "No contact details or links.", "No requests for money.", "No preaching or arguing.",
       'maxlength="500"', 'class="cf-turnstile" data-sitekey="test-site-key"', "challenges.cloudflare.com/turnstile"]) {
       expect(html).toContain(s);
     }

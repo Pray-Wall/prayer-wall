@@ -22,6 +22,7 @@ const REMOVE_LABEL: Record<(typeof REMOVE_REASONS)[number], string> = {
   harm: "A prayer for harm",
   unsuitable: "Not suitable for all ages",
   not_prayer: "Not a prayer",
+  not_english: "Not in English",
   spam: "Spam or a repeat",
   other: "Other",
 };
@@ -71,8 +72,6 @@ const Item: FC<{ item: QueueItem; now: number; skip: string[] }> = ({ item, now,
           {item.body}
         </p>
         <dl class="facts">
-          <dt>English translation</dt>
-          <dd>Translation unavailable (machine translation arrives in milestone 6)</dd>
           <dt>Classifier</dt>
           <dd>{item.category ? `${item.category}, ${Math.round((item.confidence ?? 0) * 100)}%` : "Not run (the classifier arrives in milestone 5)"}</dd>
           <dt>Why it is here</dt>

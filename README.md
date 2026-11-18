@@ -1,10 +1,10 @@
 # Prayer Wall
 
-One global web page where anyone can leave a prayer request and anyone can pray for it,
-each reading in their own language. No app, no account, no download.
+One web page where anyone can leave a prayer request and anyone can pray for it.
+English only for now. No app, no account, no download.
 
 **Status:** early development. Milestone 3 is in place: a wall with sample data, a posting form, the
-author's private link, reports, and a moderator queue. Praying, automatic moderation and translation
+author's private link, reports, and a moderator queue. Praying and automatic moderation
 are not built yet, so the site is not open to the public.
 The plan is in [`docs/blueprint.md`](docs/blueprint.md) and changes to it are logged in
 [`docs/decisions.md`](docs/decisions.md).
