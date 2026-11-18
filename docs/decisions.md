@@ -111,7 +111,7 @@ Accepted by the maintainer in the build prompt. The full text is in the blueprin
 | Is the Workers rate-limiting binding a better fit than a table? | No. Its window can only be 10 or 60 seconds and it counts per Cloudflare location, so it cannot express hourly or daily limits. The `rate_limits` table is used. Source: Cloudflare Workers "Rate Limiting" binding docs. |
 | Is Turnstile free at this volume, and what does it store? | Free on the free plan. By default the widget returns a token and sets no clearance cookie; a `cf_clearance` cookie is set only with the optional pre-clearance, which the runbook says to leave off. **Partly verified**: the cookie behaviour is from Cloudflare's docs, but what else the widget keeps in the browser needs a check with the browser's developer tools on the live form, and the privacy page (M7) must be written from that check. |
 | Does the part of a link after `#` survive copying and sharing on iOS and Android? | **Not verified.** It is standard browser behaviour, but the blueprint asks for a device test. The maintainer should post once from a phone, share the link to themselves, and open it. |
-| Is 10 ms of processor time enough once hashes are computed? | **Not reliably.** Live, over 24 hours with the country list in place: median 6.45 ms, 90th percentile 12.75 ms, 99th percentile 17.81 ms. The country list was removed in response; to be measured again. The site stays on the free plan until launch; the paid plan is decided at M7 from the new figures. |
+| Is 10 ms of processor time enough once hashes are computed? | **Yes, after the change.** Over the 24 hours to 18 November, with the country list removed and the queue live: median 2.62 ms, 90th percentile 3.55 ms, 99th percentile 4.11 ms, on light traffic; re-check under load before launch. Before the change: **not reliably.** Live, over 24 hours with the country list in place: median 6.45 ms, 90th percentile 12.75 ms, 99th percentile 17.81 ms. The country list was removed in response; to be measured again. The site stays on the free plan until launch; the paid plan is decided at M7 from the new figures. |
 
 ## 17 November 2026: Milestone 3
 
@@ -127,7 +127,7 @@ Accepted by the maintainer in the build prompt. The full text is in the blueprin
 | Removal reasons | `contact`, `money`, `identifies`, `preaching`, `harm`, `unsuitable`, `not_prayer`, `spam`, `other`; the author sees one sentence per reason, and none for `other` | Mirrors the seven public rules |
 | Restore | `/mod?view=removed` lists removed requests with "Restore to the wall" | The API table has a restore action; a mistaken removal must be reversible |
 | Moderator identity | The email address in the Cloudflare Access token, verified by the Worker (signature, audience, issuer, expiry) | Access recommends that the application validate the token itself |
-| Alerts | An `Alerter` interface with a chat-webhook adapter; no alert contains request text | The blueprint says "alert" without naming a channel. **The maintainer still has to choose the channel.** |
+| Alerts | An `Alerter` interface; Telegram (chosen by the maintainer on 18 November) through a bot, or a chat webhook; no alert contains request text | The blueprint says "alert" without naming a channel |
 | Schedule | A cron trigger every 30 minutes runs the queue check | The hourly clean-up job is M4 |
 | New columns | `requests.queued_at`, `requests.escalated_by` (`migrations/0003_moderation.sql`) | The waiting time of a reported request starts when it is pulled back, not when it was posted |
 | Queue interface language | English only | Moderators' common language; the public pages stay localised |
@@ -137,9 +137,9 @@ Accepted by the maintainer in the build prompt. The full text is in the blueprin
 
 | Assumption | Result |
 | --- | --- |
-| Is Cloudflare Access free for a small moderator team? | Reported as free for up to 50 users. **From third-party pages, not yet confirmed in the maintainer's own account**; confirm on the plan page during set-up. |
+| Is Cloudflare Access free for a small moderator team? | Yes. The Zero Trust plan page in the maintainer's account (18 November) shows a Free plan at $0 with a 50-seat limit; the maintainer activated it. |
 | How does the signed-in identity reach the Worker? | Access adds a signed token in the `Cf-Access-Jwt-Assertion` header, and Cloudflare's docs say the Worker must still validate it. The Worker does. Source: Cloudflare One "Validate JWTs". |
-| Can Access protect only `/mod` on a `workers.dev` address? | **Not yet verified.** Cloudflare offers a one-click Access switch for a whole `workers.dev` address, which must not be used here. Path-only protection is to be confirmed during set-up; if it is not possible, moderation waits for the project's own domain. |
+| Can Access protect only `/mod` on a `workers.dev` address? | Yes. A self-hosted application with the public hostname `prayer-wall.roman-alexandrovich-vega.workers.dev` and path `mod` (18 November) sends `/mod` to the Access sign-in while `/en` stays public. Team: `flat-haze-7f7b`; application "Prayer Wall moderation"; policy "Moderators" allows the maintainer's address. |
 
 ## Proposed, awaiting the maintainer's decision
 

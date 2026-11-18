@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { beforeAll, describe, expect, it } from "vitest";
 import { CloudflareAccessAuth } from "../src/adapters/cloudflare/access";
+import { TelegramAlerter } from "../src/adapters/telegram-alerter";
 import { WebhookAlerter } from "../src/adapters/webhook-alerter";
 
 const TEAM = "https://prayer-wall-test.cloudflareaccess.com";
@@ -102,5 +103,22 @@ describe("webhook alerts", () => {
 
     const broken = new WebhookAlerter("https://hooks.example/abc", (async () => { throw new Error("down"); }) as typeof fetch);
     await expect(broken.send("unattended", "x")).resolves.toBeUndefined();
+  });
+});
+
+describe("Telegram alerts", () => {
+  it("sends one message through the bot to the chat, and never throws", async () => {
+    let sent: { url: string; body: unknown } | undefined;
+    const alerter = new TelegramAlerter("123:abc", "42", (async (url: unknown, init?: RequestInit) => {
+      sent = { url: String(url), body: JSON.parse(String(init?.body)) };
+      return new Response("{}");
+    }) as typeof fetch);
+    await alerter.send("unattended", "No moderator has acted for 48 hours.");
+    expect(sent).toEqual({
+      url: "https://api.telegram.org/bot123:abc/sendMessage",
+      body: { chat_id: "42", text: "Prayer Wall [unattended]: No moderator has acted for 48 hours.", disable_web_page_preview: true },
+    });
+    const broken = new TelegramAlerter("t", "c", (async () => { throw new Error("down"); }) as typeof fetch);
+    await expect(broken.send("queue_waiting", "x")).resolves.toBeUndefined();
   });
 });
