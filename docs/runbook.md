@@ -95,6 +95,10 @@ Alerts go to Telegram, through a bot. To set it up:
 Instead of Telegram, the secret `ALERT_WEBHOOK_URL` can hold a Slack or Discord incoming-webhook address.
 Without either, alerts go nowhere. Alerts never contain request text.
 
+To check that alerts arrive, press **Send a test alert** at the bottom of `/mod`.
+
+**Both Telegram values must be of type Secret.** A plain variable added in the dashboard is removed by the next deploy from GitHub, because the deploy replaces all variables with those in `wrangler.jsonc`.
+
 | Alert | Sent when | At most |
 | --- | --- | --- |
 | `queue_waiting` | 20 items are waiting, or any item is past its target time | Every 6 hours |

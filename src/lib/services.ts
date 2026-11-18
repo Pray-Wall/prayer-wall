@@ -29,7 +29,7 @@ export interface ModeratorAuth {
   identify(request: Request): Promise<string | null>;
 }
 
-export type AlertKind = "queue_waiting" | "unattended" | "report_breaker";
+export type AlertKind = "queue_waiting" | "unattended" | "report_breaker" | "test";
 
 export interface Alerter {
   /** Sends a short operational message to the moderators. It must never contain request text. */

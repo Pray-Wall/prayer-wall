@@ -113,9 +113,9 @@ const Item: FC<{ item: QueueItem; now: number; skip: string[] }> = ({ item, now,
   );
 };
 
-type QueueProps = { moderator: string; items: QueueItem[]; waiting: number; now: number; skip: string[]; unattended: boolean; breaker: boolean };
+type QueueProps = { moderator: string; items: QueueItem[]; waiting: number; now: number; skip: string[]; unattended: boolean; breaker: boolean; alertSent?: boolean };
 
-export const ModQueue: FC<QueueProps> = ({ moderator, items, waiting, now, skip, unattended, breaker }) => (
+export const ModQueue: FC<QueueProps> = ({ moderator, items, waiting, now, skip, unattended, breaker, alertSent }) => (
   <>
     <h1>Moderation queue</h1>
     <p class="who">
@@ -132,6 +132,7 @@ export const ModQueue: FC<QueueProps> = ({ moderator, items, waiting, now, skip,
     <p class="notice">
       Judge conduct against the seven rules, never belief. Never contact or reply to an author. Skip anything you find hard; someone else will take it.
     </p>
+    {alertSent ? <p class="notice" role="status">A test alert was sent. If it does not arrive, see "Alerts" in the runbook.</p> : null}
     {items.length === 0 ? (
       <p class="notice">Nothing is waiting.</p>
     ) : (
@@ -141,7 +142,16 @@ export const ModQueue: FC<QueueProps> = ({ moderator, items, waiting, now, skip,
         ))}
       </ul>
     )}
+    <ModFooter />
   </>
+);
+
+export const ModFooter: FC = () => (
+  <form method="post" action="/mod/test-alert" class="buttons">
+    <button class="btn" type="submit">
+      Send a test alert
+    </button>
+  </form>
 );
 
 export const ModRemoved: FC<{ items: RemovedItem[] }> = ({ items }) => (
