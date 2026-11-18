@@ -104,7 +104,7 @@
     "description": "Label of the request text field."
   },
   "form_body_help": {
-    "message": "In English, up to 500 characters.",
+    "message": "The wall supports English only at the moment. Up to 500 characters.",
     "description": "Helper text under the request field."
   },
   "form_rules": {
@@ -376,7 +376,7 @@
     "description": "Private page: why a moderator removed the request."
   },
   "removed_not_english": {
-    "message": "It was not written in English.",
+    "message": "It was not written in English. The wall supports English only at the moment.",
     "description": "Private page: why a moderator removed the request."
   }
 }
