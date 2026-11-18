@@ -84,8 +84,16 @@ To add or remove a moderator, edit the policy in step 3. Nothing in the reposito
 
 ### Alerts
 
-Set the Worker secret `ALERT_WEBHOOK_URL` to an incoming-webhook address of a private chat channel
-(Slack and Discord webhooks both work). Without it, alerts go nowhere. Alerts never contain request text.
+Alerts go to Telegram, through a bot. To set it up:
+
+1. In Telegram, open `@BotFather`, send `/newbot`, and follow the steps. It replies with a **bot token**.
+2. Open the new bot and send it any message (a bot cannot write to someone who has not written to it first).
+3. In a browser open `https://api.telegram.org/bot<TOKEN>/getUpdates` and find `"chat":{"id":…}`. That number is the **chat id**.
+   For a group of moderators, add the bot to a private group, send a message there, and use the group's id (it starts with `-`).
+4. Add both as Worker **secrets**: `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID`.
+
+Instead of Telegram, the secret `ALERT_WEBHOOK_URL` can hold a Slack or Discord incoming-webhook address.
+Without either, alerts go nowhere. Alerts never contain request text.
 
 | Alert | Sent when | At most |
 | --- | --- | --- |

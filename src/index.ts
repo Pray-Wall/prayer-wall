@@ -3,6 +3,7 @@ import { D1DatabaseAdapter } from "./adapters/cloudflare/d1";
 import { CloudflareAccessAuth } from "./adapters/cloudflare/access";
 import { D1RateLimiter } from "./adapters/cloudflare/ratelimit";
 import { TurnstileBotCheck } from "./adapters/cloudflare/turnstile";
+import { TelegramAlerter } from "./adapters/telegram-alerter";
 import { WebhookAlerter, silentAlerter } from "./adapters/webhook-alerter";
 import { createApp } from "./app";
 import { checkQueue } from "./lib/moderation";
@@ -25,6 +26,9 @@ export type Env = {
   ACCESS_AUD?: string;
   /** Secret: a chat webhook address for alerts to the moderators. Optional. */
   ALERT_WEBHOOK_URL?: string;
+  /** Secrets: a Telegram bot token and the chat it writes to. Optional; used instead of the webhook. */
+  TELEGRAM_BOT_TOKEN?: string;
+  TELEGRAM_CHAT_ID?: string;
   /** Local development only: sign in as this address on localhost. Never set in production. */
   DEV_MODERATOR?: string;
 };
@@ -46,7 +50,12 @@ function moderatorAuth(env: Env): ModeratorAuth | null {
   return null;
 }
 
-const alerter = (env: Env) => (env.ALERT_WEBHOOK_URL ? new WebhookAlerter(env.ALERT_WEBHOOK_URL) : silentAlerter);
+const alerter = (env: Env) =>
+  env.TELEGRAM_BOT_TOKEN && env.TELEGRAM_CHAT_ID
+    ? new TelegramAlerter(env.TELEGRAM_BOT_TOKEN, env.TELEGRAM_CHAT_ID)
+    : env.ALERT_WEBHOOK_URL
+      ? new WebhookAlerter(env.ALERT_WEBHOOK_URL)
+      : silentAlerter;
 
 export default {
   fetch(request: Request, env: Env, ctx: ExecutionContext) {
