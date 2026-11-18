@@ -72,7 +72,7 @@ describe("the wall page", () => {
 
   it("says so when the wall is empty", async () => {
     const html = await get("/en");
-    expect(html).toContain("There are no requests here yet.");
+    expect(html).toContain("No requests are waiting right now. Be the first to ask, and someone will pray for you.");
     expect(html).not.toContain('class="btn"');
   });
 
@@ -89,10 +89,20 @@ describe("Needs prayer ordering", () => {
     expect(bodies(await get("/en"))).toEqual(["zero", "ten"]);
   });
 
-  it("breaks ties oldest first", async () => {
-    await addRequest({ body: "newer", reach: 2, age: HOUR });
-    await addRequest({ body: "older", reach: 2, age: 9 * HOUR });
-    expect(bodies(await get("/en"))).toEqual(["older", "newer"]);
+  it("shuffles requests with the same reach, and never puts more reach before less", async () => {
+    for (let i = 0; i < 12; i++) await addRequest({ body: `zero ${i}`, reach: 0, age: (i + 1) * HOUR });
+    await addRequest({ body: "one", reach: 1, age: HOUR });
+    const orders = new Set<string>();
+    for (const s of [0, 1, 2, 3]) {
+      const page = bodies(await get(`/en?s=${s}`));
+      expect(page.at(-1)).toBe("one");
+      expect(new Set(page).size).toBe(13);
+      orders.add(page.join("|"));
+    }
+    // The four shuffles are not all the same.
+    expect(orders.size).toBeGreaterThan(1);
+    // The same shuffle gives the same order, so paging is stable.
+    expect(bodies(await get("/en?s=2"))).toEqual(bodies(await get("/en?s=2")));
   });
 
   it("is the default view", async () => {
@@ -113,7 +123,10 @@ describe("Needs prayer ordering", () => {
     await addRequest({ body: "twenty days old", reach: 0, age: 20 * DAY });
     await addRequest({ body: "recent", reach: 3, age: DAY });
     // Fewer than 60 in 7 and in 14 days: the window is 30 days.
-    expect(bodies(await get("/en"))).toEqual(["twenty days old", "ten days old", "recent"]);
+    const all = bodies(await get("/en"));
+    expect(all).toHaveLength(3);
+    expect(all.slice(0, 2).sort()).toEqual(["ten days old", "twenty days old"]);
+    expect(all[2]).toBe("recent");
     // 60 within 14 days: the window stops at 14.
     for (let i = 0; i < 58; i++) await addRequest({ body: `filler ${i}`, reach: 9, age: 12 * DAY });
     const first = bodies(await get("/en"));
@@ -149,15 +162,23 @@ describe("paging", () => {
     expect(new Set(seen).size).toBe(45);
   });
 
-  it("does not skip or repeat when counts change between pages", async () => {
-    for (let i = 0; i < 30; i++) await addRequest({ body: `r${i}`, reach: i, age: HOUR });
-    const page1 = await get("/en");
-    const next = nextHref(page1)!;
-    // A request already shown gets many prayers before the visitor asks for more.
-    const { d1 } = await import("./helpers");
-    await d1.prepare("UPDATE requests SET reach_count = 100 WHERE body = 'r3'").run();
-    const page2 = bodies(await get(next));
-    expect(page2.slice(0, 9)).toEqual(["r20", "r21", "r22", "r23", "r24", "r25", "r26", "r27", "r28"]);
+  it("spreads the neediest 60 over three pages, then continues by cursor without skipping or repeating", async () => {
+    for (let i = 0; i < 70; i++) await addRequest({ body: `r${i}`, reach: i, age: HOUR });
+    const seen: string[] = [];
+    let path: string | undefined = "/en?s=1";
+    const links: string[] = [];
+    while (path) {
+      const html: string = await get(path);
+      seen.push(...bodies(html));
+      path = nextHref(html);
+      if (path) links.push(path);
+    }
+    expect(links.slice(0, 2)).toEqual(["/en?s=1&p=2", "/en?s=1&p=3"]);
+    expect(links[2]).toMatch(/^\/en\?after=[\w-]+$/);
+    expect(seen).toHaveLength(70);
+    expect(new Set(seen).size).toBe(70);
+    // Fewest reach first throughout: r0 .. r69.
+    expect(seen).toEqual(Array.from({ length: 70 }, (_, i) => `r${i}`));
   });
 
   it("has no More link on the last page, and keeps the view in the link", async () => {

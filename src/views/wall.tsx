@@ -1,53 +1,29 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import type { FC } from "hono/jsx";
-import type { WallRequest } from "../lib/database";
-import { countryName, type Lang, type T } from "../lib/i18n";
-import type { WallPage, WallView } from "../lib/wall";
+import type { Lang, T } from "../lib/i18n";
+import type { NeedNext, WallPage, WallView } from "../lib/wall";
+import { Card } from "./card";
 
-const Card: FC<{ r: WallRequest; t: T; lang: Lang; now: number }> = ({ r, t, lang, now }) => (
-  <li>
-    <article class="card">
-      <p class="who">
-        {t(`kind_${r.kind}`)}
-        {r.displayName ? (
-          <>
-            {" · "}
-            <bdi>{r.displayName}</bdi>
-          </>
-        ) : null}
-        {r.country ? ` · ${countryName(lang.code, r.country)}` : null}
-      </p>
-      {/* User text is escaped by the template and shown as plain text, in its own language and direction. */}
-      <p class="text" lang={r.lang} dir="auto" data-nosnippet>
-        {r.body}
-      </p>
-      <p class="row">
-        <time datetime={new Date(r.publishedAt * 1000).toISOString()}>{t.ago(r.publishedAt, now)}</time>
-        <span class="count">{t.count("prayed", r.prayedCount)}</span>
-      </p>
-      <details class="menu">
-        <summary>{t("card_menu")}</summary>
-        <a href={`/${lang.code}/r/${r.id}/report`} rel="nofollow">
-          {t("report")}
-        </a>
-      </details>
-    </article>
-  </li>
-);
+type Props = { lang: Lang; t: T; view: WallView; page: WallPage & { needNext?: NeedNext }; now: number; self: string };
 
-type Props = { lang: Lang; t: T; view: WallView; page: WallPage; now: number };
-
-export const Wall: FC<Props> = ({ lang, t, view, page, now }) => {
-  const href = (v: WallView, after?: string) => {
+export const Wall: FC<Props> = ({ lang, t, view, page, now, self }) => {
+  const href = (v: WallView, after?: string, need?: NeedNext) => {
     const q = new URLSearchParams();
     if (v !== "need") q.set("view", v);
     if (after) q.set("after", after);
+    if (need && "page" in need) {
+      q.set("s", String(need.shuffle));
+      q.set("p", String(need.page));
+    }
+    if (need && "after" in need) q.set("after", need.after);
     const s = q.toString();
     return `/${lang.code}${s ? `?${s}` : ""}`;
   };
   return (
     <>
       <h1 class="sr">{t("app_name")}</h1>
+      {/* Filled by wall.js only when this device has something to report. */}
+      <p class="notice" role="status" data-status hidden data-one={t("status_mine_one")} data-many={t("status_mine")} data-answered={t("status_answered")}></p>
       <nav class="tabs" aria-label={t("tabs_label")}>
         <a href={href("need")} aria-current={view === "need" ? "page" : undefined}>
           {t("tab_need")}
@@ -57,17 +33,22 @@ export const Wall: FC<Props> = ({ lang, t, view, page, now }) => {
         </a>
       </nav>
       {page.requests.length === 0 ? (
-        <p class="notice">{t("empty")}</p>
+        <p class="notice">
+          {t("empty")}{" "}
+          <a href={`/${lang.code}/new`}>{t("ask_for_prayer")}</a>
+        </p>
       ) : (
         <ul class="wall">
           {page.requests.map((r) => (
-            <Card r={r} t={t} lang={lang} now={now} />
+            <li>
+              <Card r={r} t={t} lang={lang} now={now} back={self} />
+            </li>
           ))}
         </ul>
       )}
-      {page.next ? (
+      {page.next || page.needNext ? (
         <p class="more">
-          <a class="btn" href={href(view, page.next)}>
+          <a class="btn" href={href(view, page.next ?? undefined, page.needNext)}>
             {t("more")}
           </a>
         </p>

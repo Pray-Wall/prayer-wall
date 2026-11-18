@@ -151,11 +151,33 @@ Accepted by the maintainer in the build prompt. The full text is in the blueprin
 | Proposals P5, P6, P7 | **Accepted** (P5, P7); P6 is replaced by the English check above | The maintainer agreed to server-rendered forms for the private page, reports and moderator actions. "I prayed" (M4) will use a background request with a form as fallback, as the blueprint says. |
 | Deputy's sign-in | Not added for now, by the maintainer's choice. Only the maintainer can open `/mod`. | Adding an address to the Access policy sends no email; one is sent only when that person signs in. Recorded so the gap is visible. |
 
+## 18 November 2026: Milestone 4
+
+| Topic | Decision | Why |
+| --- | --- | --- |
+| Prayer limits | One counted prayer per device per request per UTC day (the network when there is no device id); 30 counted per request per network per day; 600 counted an hour per network. Over a limit the tap is stored but not counted, and the current count comes back with no error. | Revision 2.2, change 9. The per-device limits, the anomaly flag and the soft Turnstile challenge are not built. |
+| Soft Turnstile challenge (was proposal P2) | **Not built at all**, agreed by the maintainer | Change 9 removed its trigger; code that is never switched on can still break. Add it if farming is ever seen. |
+| Reach | Rises once per network per request per day, with the first counted prayer from that network | Blueprint, rule 5 |
+| "Needs prayer" spreading | The neediest 60 are ordered by reach as always, and requests **with the same reach** are shuffled by one of four shuffles. Pages 1 to 3 come from those 60; then plain cursor paging resumes. | The blueprint shows "a shuffled 20 of the 60". A full shuffle would put a request with reach 10 above one with reach 0, which the M4 acceptance line forbids. At low volume most requests share a reach, so the spread still works. |
+| Edge caching | Wall pages carry `Cloudflare-CDN-Cache-Control: max-age=45` and `Cache-Control: no-cache` | The Workers cache has no effect on `workers.dev` addresses (Cloudflare's Cache API docs). Caching starts when the site moves to its own domain (M7), where Workers Caching must be switched on and checked. The wall holds nothing personal, so it can be shared from the cache. |
+| Button | A form posting to `/{lang}/r/{id}/prayed` that returns to the same page; with script, a background `POST /api/r/{id}/prayed` with the header `X-Prayer-Wall: 1`, and the count changes at once. The browser remembers which requests it prayed for today. | Works without JavaScript; the blueprint's same-origin and custom-header rule |
+| Shared link (was proposal P3) | `/r/{id}` redirects to `/{lang}/r/{id}`. The page shows the intro line, the request, three more requests and "Ask for prayer"; an ended, removed, held or unknown id shows "This request has ended. Others are waiting for prayer." with three requests (HTTP 404, no error shown). The preview says "Pray for {name}" or "A prayer request" and never carries request text. Request pages are `noindex`. | Revision 2.2, change 6 |
+| Pray while you wait | Three requests under the private link on the confirmation page | Revision 2.2, change 5 |
+| "Your prayers" | `GET /api/status?ids=` (at most 100 ids, 120 look-ups an hour per network) returns counts and answered flags for published requests. The wall shows one quiet line, only when the device's own request has gained prayers or a request it prayed for was answered, each once. | Revision 2.2, change 7 |
+| Answered requests | Cards show a small "Answered" label | Makes "a request you prayed for was answered" visible on the wall |
+| Removed requests | Kept 30 days from removal, then deleted | Blueprint retention table |
+| Clean-up | Runs with the queue check every 30 minutes | One schedule is enough; the blueprint says hourly |
+| Empty wall | "No requests are waiting right now. Be the first to ask, and someone will pray for you." with a link to the form | An empty wall should invite, not apologise |
+| Language list in the footer | Hidden while English is the only language | One-item list |
+| Not built in M4 | "We could not review this in time" after the 14 days; serving the wall from cache when the database fails | The first needs a record that outlives the deleted row; the second needs the cache (M7) |
+
+### Assumptions verified for M4 (18 November 2026)
+
+| Assumption | Result |
+| --- | --- |
+| How HTML caching behaves on this site | The Cache API does nothing on `workers.dev` deployments, and is not available for Workers fronted by Access. Source: Cloudflare Workers "Cache" docs. Re-check with the custom domain in M7. |
+| Does the button work in a real browser? | Yes, locally in headless Chrome: the count changed at once, and after reloading the page the count and the pressed state were kept. |
+
 ## Proposed, awaiting the maintainer's decision
 
-Each needs a yes or no before the milestone named. (P4 lapsed with translation on 18 November.)
-
-| # | Conflict | Proposal | Needed by |
-| --- | --- | --- | --- |
-| P2 | The build prompt keeps the soft Turnstile challenge on prayers "off by default (or anomaly-only)", but change 9 removes the anomaly flag | Build it behind a configuration switch that is off, with no automatic trigger | M4 |
-| P3 | Change 6 makes `/r/{id}` the address to share; the API table lists `/{lang}/r/{id}` | `/r/{id}` redirects to `/{lang}/r/{id}`, which stays the rendered page | M4 |
+None open. (P1 to P7 were decided or lapsed by 18 November; see the entries above.)

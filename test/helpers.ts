@@ -21,6 +21,8 @@ export function testApp(options: { mode?: Mode; configured?: boolean; noModerati
     now: NOW, ip: "203.0.113.7", bot: "pass" as BotVerdict, country: null as string | null,
     /** Who is signed in to /mod, or null. */
     moderator: null as string | null,
+    /** What Math.random would return; fixes the shuffle in tests. */
+    random: 0,
     alerts: [] as { kind: string; text: string }[],
   };
   const configured = options.configured ?? true;
@@ -36,6 +38,7 @@ export function testApp(options: { mode?: Mode; configured?: boolean; noModerati
     clientIp: () => state.ip,
     clientCountry: () => state.country,
     now: () => state.now,
+    random: () => state.random,
   });
   const post = (path: string, fields: Record<string, string>, headers: Record<string, string> = { "Sec-Fetch-Site": "same-origin" }) =>
     app.request(path, { method: "POST", body: new URLSearchParams(fields), headers });

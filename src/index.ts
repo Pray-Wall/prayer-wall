@@ -78,11 +78,11 @@ export default {
     return app.fetch(request, env, ctx);
   },
 
-  // Every 30 minutes: tell the moderators when the queue needs them.
+  // Every 30 minutes: delete what has expired, then tell the moderators when the queue needs them.
   async scheduled(_controller: ScheduledController, env: Env) {
-    await checkQueue(
-      { db: new D1DatabaseAdapter(env.DB), limiter: new D1RateLimiter(env.DB), alerter: alerter(env) },
-      Math.floor(Date.now() / 1000),
-    );
+    const db = new D1DatabaseAdapter(env.DB);
+    const now = Math.floor(Date.now() / 1000);
+    await db.cleanUp(now);
+    await checkQueue({ db, limiter: new D1RateLimiter(env.DB), alerter: alerter(env) }, now);
   },
 } satisfies ExportedHandler<Env>;

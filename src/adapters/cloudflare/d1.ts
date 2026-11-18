@@ -16,10 +16,24 @@ type Row = {
   prayed_count: number;
   reach_count: number;
   published_at: number;
+  answered_at: number | null;
 };
 
+const toWallRequest = (r: Row): WallRequest => ({
+  id: r.id,
+  kind: r.kind,
+  displayName: r.display_name,
+  body: r.body,
+  lang: r.lang,
+  country: r.country,
+  prayedCount: r.prayed_count,
+  reachCount: r.reach_count,
+  publishedAt: r.published_at,
+  answeredAt: r.answered_at,
+});
+
 const VISIBLE = "status = 'published' AND is_test = 0 AND expires_at > ?";
-const COLUMNS = "id, kind, display_name, body, lang, country, prayed_count, reach_count, published_at";
+const COLUMNS = "id, kind, display_name, body, lang, country, prayed_count, reach_count, published_at, answered_at";
 
 export class D1DatabaseAdapter implements Database {
   constructor(private readonly d1: D1Database) {}
@@ -59,17 +73,7 @@ export class D1DatabaseAdapter implements Database {
       .prepare(`SELECT ${COLUMNS} FROM requests WHERE ${where.join(" AND ")} ORDER BY ${orderBy} LIMIT ?`)
       .bind(...args)
       .all<Row>();
-    return results.map((r) => ({
-      id: r.id,
-      kind: r.kind,
-      displayName: r.display_name,
-      body: r.body,
-      lang: r.lang,
-      country: r.country,
-      prayedCount: r.prayed_count,
-      reachCount: r.reach_count,
-      publishedAt: r.published_at,
-    }));
+    return results.map(toWallRequest);
   }
 
   async countPublishedSince(cutoffs: number[], now: number): Promise<number[]> {
@@ -144,6 +148,73 @@ export class D1DatabaseAdapter implements Database {
   async deleteByOwnerHash(ownerHash: string): Promise<boolean> {
     const res = await this.d1.prepare("DELETE FROM requests WHERE owner_hash = ?").bind(ownerHash).run();
     return res.meta.changes > 0;
+  }
+
+  async getPublished(id: string, now: number): Promise<WallRequest | null> {
+    const row = await this.d1.prepare(`SELECT ${COLUMNS} FROM requests WHERE id = ? AND ${VISIBLE}`).bind(id, now).first<Row>();
+    return row ? toWallRequest(row) : null;
+  }
+
+  // ---- Prayers ----
+
+  async recordPrayer(p: { requestId: string; who: string; vhash: string; counted: boolean; now: number }): Promise<number | null> {
+    const first = await this.d1
+      .prepare("SELECT COUNT(*) AS n FROM prayers WHERE request_id = ? AND vhash = ? AND counted = 1")
+      .bind(p.requestId, p.vhash)
+      .first<{ n: number }>();
+    const reach = p.counted && (first?.n ?? 0) === 0 ? 1 : 0;
+    // One transaction. Each counting statement runs only if the one before it changed a row.
+    const results = await this.d1.batch([
+      this.d1
+        .prepare(
+          `INSERT OR IGNORE INTO prayers (request_id, who, vhash, counted, created_at)
+           SELECT ?, ?, ?, ?, ? FROM requests WHERE id = ? AND ${VISIBLE}`,
+        )
+        .bind(p.requestId, p.who, p.vhash, p.counted ? 1 : 0, p.now, p.requestId, p.now),
+      this.d1
+        .prepare("UPDATE requests SET prayed_count = prayed_count + 1, reach_count = reach_count + ? WHERE id = ? AND changes() > 0 AND ? = 1")
+        .bind(reach, p.requestId, p.counted ? 1 : 0),
+      this.d1
+        .prepare(
+          `INSERT INTO counters (name, value) SELECT 'prayers_total', 1 WHERE changes() > 0
+           ON CONFLICT (name) DO UPDATE SET value = value + 1`,
+        ),
+      this.d1.prepare(`SELECT prayed_count FROM requests WHERE id = ? AND ${VISIBLE}`).bind(p.requestId, p.now),
+    ]);
+    const row = (results[3]?.results as { prayed_count: number }[] | undefined)?.[0];
+    return row ? row.prayed_count : null;
+  }
+
+  async countedFromVisitor(requestId: string, vhash: string): Promise<number> {
+    const row = await this.d1
+      .prepare("SELECT COUNT(*) AS n FROM prayers WHERE request_id = ? AND vhash = ? AND counted = 1")
+      .bind(requestId, vhash)
+      .first<{ n: number }>();
+    return row?.n ?? 0;
+  }
+
+  async statusOf(ids: string[], now: number): Promise<{ id: string; prayed: number; answered: boolean }[]> {
+    if (ids.length === 0) return [];
+    const { results } = await this.d1
+      .prepare(`SELECT id, prayed_count, answered_at FROM requests WHERE id IN (${ids.map(() => "?").join(", ")}) AND ${VISIBLE}`)
+      .bind(...ids, now)
+      .all<{ id: string; prayed_count: number; answered_at: number | null }>();
+    return results.map((r) => ({ id: r.id, prayed: r.prayed_count, answered: r.answered_at !== null }));
+  }
+
+  async cleanUp(now: number): Promise<number> {
+    const old = now - 48 * 3600;
+    // A held crisis request is never deleted unread (priority 2 arrives with M5).
+    const expired = "expires_at <= ? AND NOT (status = 'held' AND priority >= 2)";
+    const results = await this.d1.batch([
+      this.d1.prepare(`DELETE FROM prayers WHERE request_id IN (SELECT id FROM requests WHERE ${expired})`).bind(now),
+      this.d1.prepare(`DELETE FROM reports WHERE request_id IN (SELECT id FROM requests WHERE ${expired})`).bind(now),
+      this.d1.prepare(`DELETE FROM translations WHERE request_id IN (SELECT id FROM requests WHERE ${expired})`).bind(now),
+      this.d1.prepare(`DELETE FROM requests WHERE ${expired}`).bind(now),
+      this.d1.prepare("DELETE FROM prayers WHERE created_at < ?").bind(old),
+      this.d1.prepare("DELETE FROM rate_limits WHERE window_start < ?").bind(old),
+    ]);
+    return results[3]?.meta.changes ?? 0;
   }
 
   // ---- Moderation ----
@@ -247,10 +318,10 @@ export class D1DatabaseAdapter implements Database {
         this.d1
           .prepare(
             `UPDATE requests SET status = 'removed', decided_by = 'moderator', remove_reason = ?,
-               priority = 0, escalated_by = NULL, queued_at = NULL
+               priority = 0, escalated_by = NULL, queued_at = NULL, expires_at = ?
              WHERE id = ? AND status IN ('held', 'published')`,
           )
-          .bind(d.removeReason ?? "other", d.id),
+          .bind(d.removeReason ?? "other", d.now + THIRTY_DAYS, d.id),
       );
     } else {
       statements.push(

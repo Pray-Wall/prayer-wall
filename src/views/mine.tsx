@@ -29,6 +29,22 @@ export const MineEnter: FC<{ lang: Lang; t: T; message?: string }> = ({ lang, t,
   </>
 );
 
+/** "Ask others to pray": shown once the request is on the wall. The link carries nothing about the author. */
+const Share: FC<{ t: T; url: string }> = ({ t, url }) => (
+  <div class="notice stack">
+    <div>
+      <label for="share">{t("share_title")}</label>
+      <input id="share" value={url} readonly dir="ltr" />
+    </div>
+    <p>{t("share_help")}</p>
+    <p class="buttons">
+      <button class="btn" type="button" data-share="share" data-copied={t("copied")} hidden>
+        {t("share_title")}
+      </button>
+    </p>
+  </div>
+);
+
 const Action: FC<{ lang: Lang; token: string; action: string; label: string; cls?: string }> = ({ lang, token, action, label, cls }) => (
   <form method="post" action={`/${lang.code}/mine`}>
     <input type="hidden" name="token" value={token} />
@@ -41,7 +57,7 @@ const Action: FC<{ lang: Lang; token: string; action: string; label: string; cls
 
 type Found = Extract<MineResult, { state: "found" | "confirm_delete" | "deleted" }>;
 
-export const MinePage: FC<{ lang: Lang; t: T; result: Found }> = ({ lang, t, result }) => {
+export const MinePage: FC<{ lang: Lang; t: T; result: Found; origin: string }> = ({ lang, t, result, origin }) => {
   if (result.state === "deleted") {
     return (
       <>
@@ -90,6 +106,7 @@ export const MinePage: FC<{ lang: Lang; t: T; result: Found }> = ({ lang, t, res
         {t.count("prayed", r.prayedCount)}
         {r.answeredAt && result.done !== "answered" ? ` · ${t("answered_done")}` : null}
       </p>
+      {result.status === "published" ? <Share t={t} url={`${origin}/r/${r.id}`} /> : null}
       <div class="buttons">
         {live && !r.answeredAt ? <Action lang={lang} token={token} action="answered" label={t("act_answered")} /> : null}
         {result.status === "published" && !r.extended ? <Action lang={lang} token={token} action="extend" label={t("act_extend")} /> : null}
