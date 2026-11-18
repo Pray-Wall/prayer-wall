@@ -3,6 +3,7 @@ import type { FC } from "hono/jsx";
 import type { WallRequest } from "../lib/database";
 import { countryName, type Lang, type T } from "../lib/i18n";
 import { CardList } from "./card";
+import { SupportLink, SupportPanel } from "./support";
 import { MAX_BODY, MAX_NAME } from "../lib/rules";
 
 export type FormValues = { kind: string; name: string; body: string; hideCountry: boolean };
@@ -10,18 +11,41 @@ export type FormValues = { kind: string; name: string; body: string; hideCountry
 export const emptyForm = (): FormValues => ({ kind: "self", name: "", body: "", hideCountry: false });
 
 /** `country` is the visitor's country as the platform reports it, or null when it is not known. */
-type Props = { lang: Lang; t: T; values: FormValues; country: string | null; error?: string; siteKey: string };
+type Props = {
+  lang: Lang; t: T; values: FormValues; country: string | null; error?: string; siteKey: string;
+  /** Show the support panel beside a refusal. */
+  crisis?: boolean;
+  /** The revise prompt: the classifier's fixable category. */
+  revise?: string;
+};
 
-export const PostForm: FC<Props> = ({ lang, t, values, country, error, siteKey }) => (
+export const PostForm: FC<Props> = ({ lang, t, values, country, error, siteKey, crisis, revise }) => (
   <>
     <h1>{t("ask_for_prayer")}</h1>
+    {crisis ? <SupportPanel t={t} /> : null}
     {error ? (
       <div class="notice error" role="alert">
         <strong>{t("err_title")}</strong>
         <p>{t(`err_${error}`)}</p>
       </div>
     ) : null}
-    <form method="post" action={`/${lang.code}/new`} class="stack">
+    {revise ? (
+      <div class="notice" role="alert">
+        <strong>{t("revise_title")}</strong>
+        <p>{t(`revise_${revise}`)}</p>
+        <p class="buttons">
+          <a class="btn" href="#body">
+            {t("revise_edit")}
+          </a>
+          <button class="btn" type="submit" form="post-form" name="as_is" value="1">
+            {t("revise_as_is")}
+          </button>
+        </p>
+      </div>
+    ) : null}
+    <form method="post" action={`/${lang.code}/new`} class="stack" id="post-form">
+      {/* After the revise prompt, the next try is the second: a fixable result is then held, not prompted again. */}
+      {revise ? <input type="hidden" name="attempt" value="2" /> : null}
       <fieldset>
         <legend>{t("form_kind")}</legend>
         {(["self", "other", "event"] as const).map((k) => (
@@ -88,11 +112,17 @@ export const PostingClosed: FC<{ lang: Lang; t: T }> = ({ lang, t }) => (
   </>
 );
 
-type ConfirmationProps = { lang: Lang; t: T; link: string; token: string; id: string; waiting: WallRequest[]; now: number };
+type ConfirmationProps = {
+  lang: Lang; t: T; link: string; token: string; id: string; waiting: WallRequest[]; now: number;
+  published: boolean; crisis: boolean; declined: boolean; unattended: boolean;
+};
 
-export const Confirmation: FC<ConfirmationProps> = ({ lang, t, link, token, id, waiting, now }) => (
+export const Confirmation: FC<ConfirmationProps> = ({ lang, t, link, token, id, waiting, now, published, crisis, declined, unattended }) => (
   <>
     <h1>{t("confirm_title")}</h1>
+    {crisis ? <SupportPanel t={t} unattended={unattended} /> : null}
+    {published ? <p class="notice">{t("published_now")}</p> : null}
+    {declined && !crisis ? <p class="notice">{t("declined_unattended")}</p> : null}
     <div class="notice stack" data-remember={token} data-posted={id}>
       <div>
         <label for="link">{t("confirm_link")}</label>
@@ -108,6 +138,7 @@ export const Confirmation: FC<ConfirmationProps> = ({ lang, t, link, token, id, 
         </a>
       </p>
     </div>
+    <SupportLink lang={lang} t={t} />
     {/* Pray while you wait (Revision 2.2, change 5). Nothing about the author's request depends on it. */}
     {waiting.length ? (
       <>

@@ -90,12 +90,22 @@ export class D1DatabaseAdapter implements Database {
     await this.d1
       .prepare(
         `INSERT INTO requests (id, owner_hash, kind, display_name, body, lang, country, status, hold_reason,
-           body_hash, poster_hash, created_at, expires_at, queued_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+           body_hash, poster_hash, created_at, expires_at, queued_at, category, confidence, shadow_result, crisis, priority,
+           decided_by, published_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .bind(r.id, r.ownerHash, r.kind, r.displayName, r.body, r.lang, r.country, r.status, r.holdReason,
-        r.bodyHash, r.posterHash, r.createdAt, r.expiresAt, r.status === "held" ? r.createdAt : null)
+        r.bodyHash, r.posterHash, r.createdAt, r.expiresAt, r.status === "held" ? r.createdAt : null,
+        r.category, r.confidence,
+        r.status === "held" && r.category ? `${r.category}:${(r.confidence ?? 0).toFixed(2)}${r.crisis ? ":crisis" : ""}` : null,
+        r.crisis ? 1 : 0, r.priority,
+        r.status === "published" ? "auto" : null, r.status === "published" ? r.createdAt : null)
       .run();
+    if (r.status === "published") {
+      await this.d1
+        .prepare("INSERT INTO counters (name, value) VALUES ('requests_total', 1) ON CONFLICT (name) DO UPDATE SET value = value + 1")
+        .run();
+    }
   }
 
   async countByBodyHash(bodyHash: string, since: number): Promise<number> {
@@ -109,19 +119,19 @@ export class D1DatabaseAdapter implements Database {
   async findByOwnerHash(ownerHash: string): Promise<OwnRequest | null> {
     const r = await this.d1
       .prepare(
-        `SELECT id, kind, display_name, body, lang, status, remove_reason, prayed_count, answered_at, extended, expires_at
+        `SELECT id, kind, display_name, body, lang, status, remove_reason, crisis, prayed_count, answered_at, extended, expires_at
          FROM requests WHERE owner_hash = ?`,
       )
       .bind(ownerHash)
       .first<{
         id: string; kind: WallRequest["kind"]; display_name: string | null; body: string; lang: string;
-        status: RequestStatus; remove_reason: string | null; prayed_count: number;
+        status: RequestStatus; remove_reason: string | null; crisis: number; prayed_count: number;
         answered_at: number | null; extended: number; expires_at: number;
       }>();
     if (!r) return null;
     return {
       id: r.id, kind: r.kind, displayName: r.display_name, body: r.body, lang: r.lang, status: r.status,
-      removeReason: r.remove_reason, prayedCount: r.prayed_count, answeredAt: r.answered_at,
+      removeReason: r.remove_reason, crisis: r.crisis === 1, prayedCount: r.prayed_count, answeredAt: r.answered_at,
       extended: r.extended === 1, expiresAt: r.expires_at,
     };
   }
@@ -225,7 +235,7 @@ export class D1DatabaseAdapter implements Database {
     const { results } = await this.d1
       .prepare(
         `SELECT r.id, r.kind, r.display_name, r.body, r.lang, r.country, r.status, r.hold_reason, r.priority,
-                r.queued_at, r.created_at, r.escalated_by, r.category, r.confidence, r.is_test,
+                r.queued_at, r.created_at, r.escalated_by, r.crisis, r.category, r.confidence, r.is_test,
                 (SELECT COUNT(*) FROM requests o
                   WHERE o.poster_hash = r.poster_hash AND o.id != r.id AND o.status IN ('held', 'removed')) AS same_day
          FROM requests r
@@ -237,7 +247,7 @@ export class D1DatabaseAdapter implements Database {
       .all<{
         id: string; kind: WallRequest["kind"]; display_name: string | null; body: string; lang: string; country: string | null;
         status: RequestStatus; hold_reason: HoldReason | null; priority: number; queued_at: number; created_at: number;
-        escalated_by: string | null; category: string | null; confidence: number | null; is_test: number; same_day: number;
+        escalated_by: string | null; crisis: number; category: string | null; confidence: number | null; is_test: number; same_day: number;
       }>();
     const reports = new Map<string, QueueItem["reports"]>();
     if (results.length) {
@@ -255,7 +265,7 @@ export class D1DatabaseAdapter implements Database {
     return results.map((r) => ({
       id: r.id, kind: r.kind, displayName: r.display_name, body: r.body, lang: r.lang, country: r.country,
       status: r.status, holdReason: r.hold_reason, priority: r.priority, queuedAt: r.queued_at, createdAt: r.created_at,
-      escalatedBy: r.escalated_by, category: r.category, confidence: r.confidence, isTest: r.is_test === 1,
+      escalatedBy: r.escalated_by, crisis: r.crisis === 1, category: r.category, confidence: r.confidence, isTest: r.is_test === 1,
       sameDayOthers: r.same_day, reports: reports.get(r.id) ?? {},
     }));
   }
@@ -286,9 +296,13 @@ export class D1DatabaseAdapter implements Database {
   async decide(d: Decision): Promise<boolean> {
     // Each batch is one transaction. The log line is written only if the change applied
     // (changes() is the number of rows the statement before it changed).
+    // The classifier's shadow result is copied beside the decision, so it outlives the request.
     const log = this.d1
-      .prepare("INSERT INTO mod_log (request_id, action, moderator, note, created_at) SELECT ?, ?, ?, ?, ? WHERE changes() > 0")
-      .bind(d.id, d.action, d.moderator, d.removeReason ?? null, d.now);
+      .prepare(
+        `INSERT INTO mod_log (request_id, action, moderator, note, shadow, created_at)
+         SELECT ?, ?, ?, ?, (SELECT shadow_result FROM requests WHERE id = ?), ? WHERE changes() > 0`,
+      )
+      .bind(d.id, d.action, d.moderator, d.removeReason ?? null, d.id, d.now);
     const statements: D1PreparedStatement[] = [];
 
     if (d.action === "publish" || d.action === "restore") {
@@ -322,6 +336,12 @@ export class D1DatabaseAdapter implements Database {
              WHERE id = ? AND status IN ('held', 'published')`,
           )
           .bind(d.removeReason ?? "other", d.now + THIRTY_DAYS, d.id),
+      );
+    } else if (d.action === "mark_crisis") {
+      statements.push(
+        this.d1
+          .prepare("UPDATE requests SET crisis = 1, priority = 2, hold_reason = 'crisis' WHERE id = ? AND queued_at IS NOT NULL AND status != 'removed' AND crisis = 0")
+          .bind(d.id),
       );
     } else {
       statements.push(
@@ -386,5 +406,25 @@ export class D1DatabaseAdapter implements Database {
       .prepare("INSERT INTO counters (name, value) VALUES (?, ?) ON CONFLICT (name) DO UPDATE SET value = excluded.value")
       .bind(name, value)
       .run();
+  }
+
+  async countCreatedSince(since: number): Promise<number> {
+    const row = await this.d1.prepare("SELECT COUNT(*) AS n FROM requests WHERE created_at >= ?").bind(since).first<{ n: number }>();
+    return row?.n ?? 0;
+  }
+
+  async logEvent(kind: string, actor: string, note: string | null, now: number): Promise<void> {
+    await this.d1.prepare("INSERT INTO events (kind, actor, note, created_at) VALUES (?, ?, ?, ?)").bind(kind, actor, note, now).run();
+  }
+
+  async shadowReport(since: number): Promise<{ shadow: string | null; action: string; n: number }[]> {
+    const { results } = await this.d1
+      .prepare(
+        `SELECT shadow, action, COUNT(*) AS n FROM mod_log
+         WHERE created_at >= ? AND action IN ('publish', 'remove') GROUP BY shadow, action ORDER BY n DESC`,
+      )
+      .bind(since)
+      .all<{ shadow: string | null; action: string; n: number }>();
+    return results;
   }
 }

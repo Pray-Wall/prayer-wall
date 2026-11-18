@@ -11,6 +11,10 @@ const WHY: Record<string, string> = {
   bot_check_unavailable: "The bot check could not be reached",
   bot_check_misconfigured: "The bot check is misconfigured (see the runbook)",
   reported: "Reported by visitors",
+  classifier: "Held by the classifier",
+  classifier_failed: "The classifier failed or was unavailable",
+  crisis: "Crisis: decide within 2 hours. Publish as written unless it describes a method, a plan with a time or place, or identifies another person at risk",
+  unattended: "Unattended mode: the author was told it could not be shown automatically",
 };
 const KIND = { self: "For the author", other: "For someone else", event: "For an event or group" } as const;
 const REPORT_LABEL = { spam: "spam", money: "money", personal: "personal details", hateful: "hateful or harmful", other: "other" } as const;
@@ -73,7 +77,7 @@ const Item: FC<{ item: QueueItem; now: number; skip: string[] }> = ({ item, now,
         </p>
         <dl class="facts">
           <dt>Classifier</dt>
-          <dd>{item.category ? `${item.category}, ${Math.round((item.confidence ?? 0) * 100)}%` : "Not run (the classifier arrives in milestone 5)"}</dd>
+          <dd>{item.category ? `${item.category}, ${Math.round((item.confidence ?? 0) * 100)}%` : "Not run, or it failed"}</dd>
           <dt>Why it is here</dt>
           <dd>
             {WHY[item.holdReason ?? ""] ?? "Held"}
@@ -105,6 +109,7 @@ const Item: FC<{ item: QueueItem; now: number; skip: string[] }> = ({ item, now,
             </select>
           </Decide>
           <Decide id={item.id} action="escalate" label="Ask for a second opinion" cls="btn" skip={skipList} />
+          {item.crisis ? null : <Decide id={item.id} action="mark_crisis" label="Mark as crisis" cls="btn" skip={skipList} />}
           <a href={`/mod?skip=${[...skip, item.id].join(",")}`}>Skip</a>
         </div>
       </article>
@@ -112,9 +117,14 @@ const Item: FC<{ item: QueueItem; now: number; skip: string[] }> = ({ item, now,
   );
 };
 
-type QueueProps = { moderator: string; items: QueueItem[]; waiting: number; now: number; skip: string[]; unattended: boolean; breaker: boolean; alertSent?: boolean };
+type QueueProps = {
+  moderator: string; items: QueueItem[]; waiting: number; now: number; skip: string[]; unattended: boolean; breaker: boolean;
+  alertSent?: boolean;
+  /** The configured mode and whether a breaker has switched `auto` to `review_all`. */
+  mode: string; overridden: boolean; strict: boolean;
+};
 
-export const ModQueue: FC<QueueProps> = ({ moderator, items, waiting, now, skip, unattended, breaker, alertSent }) => (
+export const ModQueue: FC<QueueProps> = ({ moderator, items, waiting, now, skip, unattended, breaker, alertSent, mode, overridden, strict }) => (
   <>
     <h1>Moderation queue</h1>
     <p class="who">
@@ -126,7 +136,31 @@ export const ModQueue: FC<QueueProps> = ({ moderator, items, waiting, now, skip,
         </>
       ) : null}
     </p>
-    {unattended ? <p class="notice error">Nobody has moderated for 48 hours, so posting is paused. Any decision here reopens it.</p> : null}
+    <p class="who">
+      Mode: {overridden ? "review_all (set by the posting breaker)" : mode}
+      {strict ? " · stricter threshold in force (weekly self-test)" : ""} · <a href="/mod?view=shadow">Classifier results</a>
+    </p>
+    {overridden ? (
+      <form method="post" action="/mod/mode/restore" class="notice buttons">
+        <span>A burst of posts switched the site to review_all. Return it to auto when it is safe.</span>
+        <button class="btn" type="submit">
+          Return to auto
+        </button>
+      </form>
+    ) : null}
+    {strict ? (
+      <form method="post" action="/mod/strict/clear" class="notice buttons">
+        <span>The weekly self-test found a rule-breaking example the classifier would publish. Clear this once the model or threshold is fixed.</span>
+        <button class="btn" type="submit">
+          Clear the stricter threshold
+        </button>
+      </form>
+    ) : null}
+    {unattended ? (
+      <p class="notice error">
+        Nobody has moderated for 48 hours{mode === "auto" && !overridden ? ", so only clearly fine requests are published" : ", so posting is paused"}. Any decision here ends it.
+      </p>
+    ) : null}
     {breaker ? <p class="notice">Unusual reporting was detected. For now, reports flag requests here without hiding them from the wall.</p> : null}
     <p class="notice">
       Judge conduct against the seven rules, never belief. Never contact or reply to an author. Skip anything you find hard; someone else will take it.
@@ -152,6 +186,49 @@ export const ModFooter: FC = () => (
     </button>
   </form>
 );
+
+/** Shadow running: what the classifier said beside what moderators decided. */
+export const ModShadow: FC<{ rows: { shadow: string | null; action: string; n: number }[]; days: number }> = ({ rows, days }) => {
+  const by = new Map<string, { publish: number; remove: number }>();
+  for (const r of rows) {
+    const label = r.shadow ? r.shadow.split(":").filter((p) => !/^[0-9.]+$/.test(p)).join(", ") : "not run";
+    const e = by.get(label) ?? { publish: 0, remove: 0 };
+    if (r.action === "publish") e.publish += r.n;
+    else e.remove += r.n;
+    by.set(label, e);
+  }
+  return (
+    <>
+      <h1>Classifier results</h1>
+      <p class="who">
+        <a href="/mod">Back to the queue</a>
+      </p>
+      <p>What the classifier said about each request, beside what a moderator then decided, over the last {days} days.</p>
+      {by.size === 0 ? (
+        <p class="notice">No decisions yet.</p>
+      ) : (
+        <table class="facts-table">
+          <thead>
+            <tr>
+              <th scope="col">Classifier said</th>
+              <th scope="col">Published</th>
+              <th scope="col">Removed</th>
+            </tr>
+          </thead>
+          <tbody>
+            {[...by.entries()].map(([label, e]) => (
+              <tr>
+                <td>{label}</td>
+                <td>{e.publish}</td>
+                <td>{e.remove}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </>
+  );
+};
 
 export const ModRemoved: FC<{ items: RemovedItem[] }> = ({ items }) => (
   <>

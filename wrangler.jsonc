@@ -22,10 +22,17 @@
     "TURNSTILE_SITE_KEY": "0x4AAAAAAGEpdhxWLGYVsnFn",
     // Cloudflare Access in front of /mod. Until both are set, /mod does not exist (see docs/runbook.md).
     "ACCESS_TEAM_DOMAIN": "https://flat-haze-7f7b.cloudflareaccess.com",
-    "ACCESS_AUD": "38e8fdf5cfbab9a447d775eb6ad183c27e9d5dbd055157448ee7188f12057194"
+    "ACCESS_AUD": "38e8fdf5cfbab9a447d775eb6ad183c27e9d5dbd055157448ee7188f12057194",
+    // Classifier models tried in order, and the confidence needed to publish automatically.
+    // Chosen with the classifier test (test/moderation-eval). Empty: every request is held.
+    "CLASSIFIER_MODELS": "",
+    "CLASSIFIER_THRESHOLD": "0.9",
+    "CLASSIFIER_STRICT_THRESHOLD": "0.97"
   },
   // Queue checks for the moderators (src/index.ts, scheduled).
-  "triggers": { "crons": ["*/30 * * * *"] },
+  "triggers": { "crons": ["*/30 * * * *", "17 3 * * 1"] },
+  // Workers AI for the classifier. Request text stays with Cloudflare.
+  "ai": { "binding": "AI" },
   "d1_databases": [
     {
       "binding": "DB",

@@ -6,7 +6,9 @@ import { TurnstileBotCheck } from "./adapters/cloudflare/turnstile";
 import { TelegramAlerter } from "./adapters/telegram-alerter";
 import { WebhookAlerter, silentAlerter } from "./adapters/webhook-alerter";
 import { createApp } from "./app";
+import { WorkersAiRunner } from "./adapters/cloudflare/workers-ai";
 import { checkQueue } from "./lib/moderation";
+import { runSelfTest } from "./lib/self-test";
 import type { ModeratorAuth } from "./lib/services";
 import type { Mode } from "./lib/posting";
 
@@ -29,6 +31,13 @@ export type Env = {
   /** Secrets: a Telegram bot token and the chat it writes to. Optional; used instead of the webhook. */
   TELEGRAM_BOT_TOKEN?: string;
   TELEGRAM_CHAT_ID?: string;
+  /** Workers AI. Optional: without it every request is held. */
+  AI?: { run(model: string, inputs: Record<string, unknown>): Promise<unknown> };
+  /** Classifier models, comma-separated, tried in order (Revision 2.2, change 3). */
+  CLASSIFIER_MODELS?: string;
+  /** Confidence needed to publish automatically, and the stricter one for `unattended` and after a failed self-test. */
+  CLASSIFIER_THRESHOLD?: string;
+  CLASSIFIER_STRICT_THRESHOLD?: string;
   /** Local development only: sign in as this address on localhost. Never set in production. */
   DEV_MODERATOR?: string;
 };
@@ -50,12 +59,29 @@ function moderatorAuth(env: Env): ModeratorAuth | null {
   return null;
 }
 
+function classifier(env: Env) {
+  const models = (env.CLASSIFIER_MODELS ?? "").split(",").map((m) => m.trim()).filter(Boolean);
+  return env.AI && models.length ? { runner: new WorkersAiRunner(env.AI), models } : null;
+}
+
+const number = (value: string | undefined, fallback: number) => {
+  const n = Number(value);
+  return n > 0 && n <= 1 ? n : fallback;
+};
+const thresholds = (env: Env) => ({
+  normal: number(env.CLASSIFIER_THRESHOLD, 0.9),
+  strict: number(env.CLASSIFIER_STRICT_THRESHOLD, 0.97),
+});
+
 const alerter = (env: Env) =>
   env.TELEGRAM_BOT_TOKEN && env.TELEGRAM_CHAT_ID
     ? new TelegramAlerter(env.TELEGRAM_BOT_TOKEN, env.TELEGRAM_CHAT_ID)
     : env.ALERT_WEBHOOK_URL
       ? new WebhookAlerter(env.ALERT_WEBHOOK_URL)
       : silentAlerter;
+
+/** Must match the second cron trigger in wrangler.jsonc. */
+export const WEEKLY = "17 3 * * 1";
 
 export default {
   fetch(request: Request, env: Env, ctx: ExecutionContext) {
@@ -67,6 +93,8 @@ export default {
       mode: parseMode(env.MODE),
       moderatorAuth: moderatorAuth(env),
       alerter: alerter(env),
+      classifier: classifier(env),
+      thresholds: thresholds(env),
       sourceUrl: sourceUrl(env),
       // Cloudflare sets this header itself; a visitor cannot forge it.
       clientIp: (req) => req.headers.get("CF-Connecting-IP") ?? "unknown",
@@ -79,10 +107,17 @@ export default {
   },
 
   // Every 30 minutes: delete what has expired, then tell the moderators when the queue needs them.
-  async scheduled(_controller: ScheduledController, env: Env) {
+  // Once a week (Monday 03:17 UTC): the classifier self-test.
+  async scheduled(controller: ScheduledController, env: Env) {
     const db = new D1DatabaseAdapter(env.DB);
+    const limiter = new D1RateLimiter(env.DB);
     const now = Math.floor(Date.now() / 1000);
+    if (controller.cron === WEEKLY) {
+      const c = classifier(env);
+      if (c) await runSelfTest({ ...c, db, limiter, alerter: alerter(env) }, thresholds(env).normal, now);
+      return;
+    }
     await db.cleanUp(now);
-    await checkQueue({ db, limiter: new D1RateLimiter(env.DB), alerter: alerter(env) }, now);
+    await checkQueue({ db, limiter, alerter: alerter(env) }, now);
   },
 } satisfies ExportedHandler<Env>;

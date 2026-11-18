@@ -143,7 +143,7 @@ describe("a refused post", () => {
   it("does not count against the posting limits", async () => {
     const app = testApp();
     for (let i = 0; i < 8; i++) await app.post("/en/new", { ...VALID, body: "see www.example.com" });
-    expect(await rows("SELECT * FROM rate_limits")).toEqual([]);
+    expect(await rows("SELECT * FROM rate_limits WHERE key LIKE 'post:%'")).toEqual([]);
     await postRequest(app);
     expect((await stored())[0]!.hold_reason).toBe("review_all");
   });

@@ -72,12 +72,21 @@ export async function checkQueue(deps: Deps & { alerter: Alerter }, now: number)
   const once = async (key: string, period: number) => (await deps.limiter.hit(`alert:${key}`, period, now)) === 1;
 
   if (await isUnattended(deps.db, now)) {
+    const crisisWaiting = (await deps.db.listQueue(50, [])).some((i) => classOf(i) === "crisis");
+    if (crisisWaiting && (await once("crisis_unattended", DAY))) {
+      await deps.alerter.send("crisis_overdue", "Nobody is moderating and a crisis request is waiting. Please open the queue.");
+    }
     if (await once("unattended", DAY)) {
       await deps.alerter.send("unattended", `No moderator has acted for 48 hours and ${waiting} item(s) are waiting. Posting is paused until someone reviews the queue.`);
     }
     return;
   }
   const items = await deps.db.listQueue(50, []);
+  // A crisis request is never left unread: page the maintainer when one passes its hard limit.
+  const overdue = items.filter((i) => classOf(i) === "crisis" && ageLevel(i, now) === "red").length;
+  if (overdue > 0 && (await once("crisis_overdue", 6 * HOUR))) {
+    await deps.alerter.send("crisis_overdue", `${overdue} crisis request(s) have waited more than 6 hours. Please open the queue now.`);
+  }
   const late = items.filter((i) => ageLevel(i, now) !== "ok").length;
   if ((waiting >= QUEUE_ALERT_AT || late > 0) && (await once("queue_waiting", 6 * HOUR))) {
     await deps.alerter.send("queue_waiting", `${waiting} item(s) are waiting for review; ${late} past their target time.`);

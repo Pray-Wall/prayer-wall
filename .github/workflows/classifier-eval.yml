@@ -1,0 +1,30 @@
+# Runs the classifier test set against Workers AI. Started by hand; see test/moderation-eval/README.md.
+name: Classifier test
+on:
+  workflow_dispatch:
+    inputs:
+      models:
+        description: Workers AI model ids, comma-separated, tried one after another
+        required: true
+      threshold:
+        description: Confidence needed to publish (0 to 1)
+        required: true
+        default: "0.85"
+permissions:
+  contents: read
+jobs:
+  eval:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node --experimental-strip-types scripts/eval-classifier.ts "${{ inputs.models }}" "${{ inputs.threshold }}"
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: 40ff95d04b2109d85aa2abd02ce902ac
+      - uses: actions/upload-artifact@v4
+        with:
+          name: classifier-report
+          path: classifier-report.md

@@ -3,9 +3,10 @@
 One web page where anyone can leave a prayer request and anyone can pray for it.
 English only for now. No app, no account, no download.
 
-**Status:** early development. Milestone 4 is in place: a wall with sample data, a posting form, the
-author's private link, reports, a moderator queue, and the "I prayed" button. Automatic moderation
-is not built yet, so the site is not open to the public.
+**Status:** early development. Milestone 5 is in place: a wall with sample data, a posting form, the
+author's private link, reports, a moderator queue, the "I prayed" button, and automatic moderation
+with a crisis flow. The classifier runs in shadow (`review_all`) until it passes its test, so the
+site is not open to the public yet.
 The plan is in [`docs/blueprint.md`](docs/blueprint.md) and changes to it are logged in
 [`docs/decisions.md`](docs/decisions.md).
 

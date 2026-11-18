@@ -34,7 +34,9 @@ export type ListPublishedOptions = {
 export type RequestStatus = "held" | "published" | "removed";
 
 /** Why a request is waiting for a moderator. */
-export type HoldReason = "review_all" | "soft_limit" | "duplicate" | "bot_check_unavailable" | "bot_check_misconfigured" | "reported";
+export type HoldReason =
+  | "review_all" | "soft_limit" | "duplicate" | "bot_check_unavailable" | "bot_check_misconfigured" | "reported"
+  | "classifier" | "classifier_failed" | "crisis" | "unattended";
 
 export type NewRequest = {
   id: string;
@@ -50,6 +52,12 @@ export type NewRequest = {
   posterHash: string;
   createdAt: number;
   expiresAt: number;
+  /** Classifier result: shown to moderators; for a held request also the shadow result. */
+  category: string | null;
+  confidence: number | null;
+  crisis: boolean;
+  /** 0 normal, 2 crisis. */
+  priority: number;
 };
 
 /** A request as its author sees it on the private page. */
@@ -61,6 +69,7 @@ export type OwnRequest = {
   lang: string;
   status: RequestStatus;
   removeReason: string | null;
+  crisis: boolean;
   prayedCount: number;
   answeredAt: number | null;
   extended: boolean;
@@ -85,7 +94,8 @@ export type QueueItem = {
   queuedAt: number;
   createdAt: number;
   escalatedBy: string | null;
-  /** Classifier result; null until the classifier exists (M5). */
+  crisis: boolean;
+  /** Classifier result; null when the classifier was not run or failed. */
   category: string | null;
   confidence: number | null;
   isTest: boolean;
@@ -97,7 +107,7 @@ export type QueueItem = {
 
 export type RemovedItem = { id: string; body: string; lang: string; removeReason: string | null; createdAt: number };
 
-export type ModAction = "publish" | "remove" | "restore" | "escalate";
+export type ModAction = "publish" | "remove" | "restore" | "escalate" | "mark_crisis";
 
 export type Decision = { id: string; action: ModAction; moderator: string; removeReason?: string; now: number };
 
@@ -171,6 +181,12 @@ export interface Database {
   reportersOf(id: string): Promise<string[]>;
   /** Puts a published request in the queue: hidden from the wall, or only flagged when `flagOnly`. */
   pullBack(id: string, now: number, flagOnly: boolean): Promise<void>;
+
+  /** How many requests were created at or after `since`, whatever their status. */
+  countCreatedSince(since: number): Promise<number>;
+  logEvent(kind: string, actor: string, note: string | null, now: number): Promise<void>;
+  /** Shadow running: the classifier's result beside each moderator's decision. */
+  shadowReport(since: number): Promise<{ shadow: string | null; action: string; n: number }[]>;
 
   /** Small named numbers, such as a breaker's end time. */
   getState(name: string): Promise<number | null>;

@@ -29,9 +29,16 @@ export interface ModeratorAuth {
   identify(request: Request): Promise<string | null>;
 }
 
-export type AlertKind = "queue_waiting" | "unattended" | "report_breaker" | "test";
+export type AlertKind =
+  | "queue_waiting" | "unattended" | "report_breaker" | "test"
+  | "crisis" | "crisis_overdue" | "posting_burst" | "classifier_errors" | "model_unavailable" | "self_test";
 
 export interface Alerter {
   /** Sends a short operational message to the moderators. It must never contain request text. */
   send(kind: AlertKind, text: string): Promise<void>;
+}
+
+/** One call to one model. Throws when the model is unavailable or the call fails. */
+export interface ModelRunner {
+  run(model: string, system: string, user: string): Promise<unknown>;
 }
