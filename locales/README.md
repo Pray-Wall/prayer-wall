@@ -9,4 +9,4 @@ One JSON file per language. `en.json` is the source: each entry has a `message` 
 - A language is listed in `src/lib/i18n.ts` only after a native speaker has reviewed it
   (see the go-live checklist in `docs/blueprint.md`).
 
-**Status:** `ar.json` was drafted for development and has **not** yet been reviewed by a native speaker.
+**Status:** English only for now. An Arabic draft existed until 18 November 2026 and was removed; it is in the git history.

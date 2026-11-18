@@ -19,13 +19,9 @@ describe("the wall page", () => {
     expect(html).not.toMatch(/<img/i);
   });
 
-  it("is left to right in English and right to left in Arabic", async () => {
+  it("is left to right in English; any other language code falls back to English", async () => {
     expect(await get("/en")).toMatch(/<html lang="en" dir="ltr">/);
-    const ar = await get("/ar");
-    expect(ar).toMatch(/<html lang="ar" dir="rtl">/);
-    expect(ar).toContain("جدار الصلاة");
-    expect(ar).toContain("بحاجة إلى صلاة");
-    expect(ar).not.toContain("Needs prayer");
+    expect((await testApp().request("/ar")).headers.get("location")).toBe("/en");
   });
 
   it("marks each request with its own language and automatic direction, hidden from snippets", async () => {
@@ -59,10 +55,10 @@ describe("the wall page", () => {
     expect(html).toContain("No prayers yet");
   });
 
-  it("uses Arabic plural forms", async () => {
-    for (const prayed of [0, 1, 2, 5, 11]) await addRequest({ prayed });
-    const html = await get("/ar");
-    for (const s of ["لم يُصلِّ أحد بعد", "صلاة واحدة", "صلاتان", " صلوات", " صلاة"]) expect(html).toContain(s);
+  it("uses English plural forms", async () => {
+    for (const prayed of [0, 1, 2, 11]) await addRequest({ prayed });
+    const html = await get("/en");
+    for (const t of ["No prayers yet", "Prayed once", "Prayed 2 times", "Prayed 11 times"]) expect(html).toContain(t);
   });
 
   it("only shows published, unexpired, non-test requests", async () => {

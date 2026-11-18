@@ -1,15 +1,16 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-import ar from "../../locales/ar.json";
 import en from "../../locales/en.json";
 
 type Catalog = Record<string, { message: string } | undefined>;
 
 export type Lang = { code: string; name: string; dir: "ltr" | "rtl" };
 
-/** Interface languages, each named in its own language. English is the source and the fallback. */
+/**
+ * Interface languages, each named in its own language. English is the source and the fallback.
+ * English only for now (decision of 18 November 2026); right-to-left support stays in the layout.
+ */
 export const LANGS: readonly Lang[] = [
   { code: "en", name: "English", dir: "ltr" },
-  { code: "ar", name: "العربية", dir: "rtl" },
 ];
 export const DEFAULT_LANG = "en";
 
@@ -35,7 +36,7 @@ export function countryName(lang: string, code: string | null): string | null {
   return names.of(code) ?? code;
 }
 
-const catalogs: Record<string, Catalog> = { en, ar };
+const catalogs: Record<string, Catalog> = { en };
 
 export function getLang(code: string): Lang | undefined {
   return LANGS.find((l) => l.code === code);
