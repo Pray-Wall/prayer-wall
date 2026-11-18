@@ -73,7 +73,7 @@ Accepted by the maintainer in the build prompt. The full text is in the blueprin
 | Plurals and "time ago" | The runtime's built-in plural rules and relative-time formatting | No hand-written plural logic per language; Arabic needs six forms |
 | Unknown language code | `/xx` redirects to `/en` | Blueprint: unknown codes fall back to English |
 | Static files | Served by Workers static assets from `public/` | Blueprint choice; the Worker is not invoked for them |
-| Sample data | 40 invented requests in 12 languages, loaded into the live database by a hand-run workflow | Lets the wall be checked where it runs. **Must be deleted before any real person posts** (see runbook). |
+| Sample data | 40 invented requests (in 12 languages until 18 November, now in English), loaded into the live database by a hand-run workflow | Lets the wall be checked where it runs. **Must be deleted before any real person posts** (see runbook). |
 | Arabic interface text | Drafted by the builder, **not yet reviewed by a native speaker** | Needed to build and test right-to-left; the go-live checklist still applies |
 
 ### Assumptions verified for M1 (17 November 2026)
