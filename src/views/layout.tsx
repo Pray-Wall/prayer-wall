@@ -37,6 +37,9 @@ export const Layout: FC<Props> = ({ lang, t, sourceUrl, title, noindex, botCheck
       ) : null}
       <title>{title ? `${title} · ${t("app_name")}` : t("app_name")}</title>
       <link rel="stylesheet" href="/style.css" />
+      <link rel="manifest" href="/manifest.webmanifest" />
+      <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+      <meta name="theme-color" content="#1f4e9c" />
       <script src="/wall.js" defer></script>
       {botCheck ? <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script> : null}
     </head>
@@ -77,7 +80,8 @@ export const Layout: FC<Props> = ({ lang, t, sourceUrl, title, noindex, botCheck
           </nav>
         ) : null}
         <p>
-          <a href={sourceUrl}>{t("source_code")}</a>
+          <a href={`/${lang.code}/rules`}>{t("rules_link")}</a> · <a href={`/${lang.code}/privacy`}>{t("privacy_link")}</a> ·{" "}
+          <a href={`/${lang.code}/about`}>{t("about_link")}</a> · <a href={sourceUrl}>{t("source_code")}</a>
         </p>
       </footer>
     </body>

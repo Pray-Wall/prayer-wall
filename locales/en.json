@@ -59,6 +59,22 @@
     "message": "Language",
     "description": "Heading of the language list in the footer."
   },
+  "rules_link": {
+    "message": "Rules",
+    "description": "Footer link to the rules page."
+  },
+  "privacy_link": {
+    "message": "Privacy",
+    "description": "Footer link to the privacy page."
+  },
+  "about_link": {
+    "message": "About",
+    "description": "Footer link to the about page."
+  },
+  "removed_second_look": {
+    "message": "To ask for a second look, write to {contact} with ID {id}.",
+    "description": "Private page under a removal reason. {contact} is the site's email address."
+  },
   "source_code": {
     "message": "Source code",
     "description": "Footer link to the source code of the running version."

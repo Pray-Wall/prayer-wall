@@ -149,6 +149,42 @@ or threshold first. `/healthz/ai` returns 200 only after a passing run in the la
 A crisis request is held at the top of the queue and alerts at once. If it waits more than 6 hours,
 the alert repeats every 6 hours. Never contact the author.
 
+## Database export
+
+**Actions → Database export** runs every Sunday at 02:41 UTC and can be run by hand. It exports the
+database, encrypts it with the `EXPORT_PASSPHRASE` secret (AES-256, `gpg`), deletes the plain copy and
+keeps the encrypted file as a run artifact for 7 days. Set the secret once (Settings → Secrets and
+variables → Actions → `EXPORT_PASSPHRASE`, a long random phrase kept in a password manager). To read
+an export: download the artifact, then `gpg --decrypt prayer-wall-DATE.sql.gpg > export.sql`.
+Restore into an empty database with `npx wrangler d1 execute prayer-wall --remote --file export.sql`.
+The export contains request text: never keep a decrypted copy.
+
+## Helpline link
+
+The weekly job (Monday 03:17 UTC) opens https://findahelpline.com and alerts (`helpline`) if it does
+not answer with a page. **Once a month, a person** opens it, searches for two countries and checks
+that real helplines appear. Note the date in `docs/decisions.md`.
+
+## Load tests (staging only)
+
+Never against production: the free plan's daily request allowance is shared with every Worker on the
+account. Run them after moving to the Workers Paid plan.
+
+1. Create a staging copy: a second D1 database (`prayer-wall-staging`) and a Worker
+   `prayer-wall-staging` with `ENVIRONMENT=staging`, Turnstile's test keys
+   (site `1x00000000000000000000AA`, secret `1x0000000000000000000000000000000AA`), and `MODE=auto`.
+2. Seed it, then run `node --experimental-strip-types scripts/load-test.ts <staging url> <scenario>`.
+
+| Scenario | Command | Passes when |
+| --- | --- | --- |
+| Normal peak | `normal` | Errors under 0.1%; p95 under 300 ms; prayer counts exact afterwards |
+| Classifier outage | `normal`, with `CLASSIFIER_MODELS` set to a model that does not exist | Nothing published automatically; alert within 2 minutes |
+| Posting burst | `burst` | `review_all` within 1 minute; nothing lost |
+| Report spike | `reports` | Breaker trips within 1 minute; at most 10 requests hidden before it does |
+| Prayer farming | `farming` | At most 30 counted; reach rises by 1 |
+
+Record results in `docs/decisions.md`.
+
 ## Pause posting
 
 Set `MODE` to `closed` in `wrangler.jsonc` and merge. Reading stays available. Set it back to `review_all` to reopen.

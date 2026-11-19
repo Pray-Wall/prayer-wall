@@ -58,7 +58,7 @@ const Action: FC<{ lang: Lang; token: string; action: string; label: string; cls
 
 type Found = Extract<MineResult, { state: "found" | "confirm_delete" | "deleted" }>;
 
-export const MinePage: FC<{ lang: Lang; t: T; result: Found; origin: string }> = ({ lang, t, result, origin }) => {
+export const MinePage: FC<{ lang: Lang; t: T; result: Found; origin: string; contact: string }> = ({ lang, t, result, origin, contact }) => {
   if (result.state === "deleted") {
     return (
       <>
@@ -106,6 +106,7 @@ export const MinePage: FC<{ lang: Lang; t: T; result: Found; origin: string }> =
             <strong>{t(`status_${result.status}`)}</strong>
             {/* A removal's reason category is shown to the author. */}
             {result.status === "removed" && r.removeReason && r.removeReason !== "other" ? ` ${t(`removed_${r.removeReason}`)}` : null}
+            {result.status === "removed" ? ` ${t("removed_second_look").replace("{contact}", contact).replace("{id}", r.id)}` : null}
           </>
         )}
       </p>

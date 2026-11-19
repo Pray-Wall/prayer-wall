@@ -214,6 +214,33 @@ model says; a fixed pattern check holds it for a person, and the prompt now name
 `not_prayer`. On the test set the check matches only that example. Chosen model list:
 `@cf/meta/llama-3.3-70b-instruct-fp8-fast,@cf/meta/llama-3.1-8b-instruct` (the second is the fallback).
 
+## 19 November 2026: Milestone 7 (part 1)
+
+| Topic | Decision | Why |
+| --- | --- | --- |
+| Milestone 6 | Skipped: it was translation, dropped on 18 November | English only |
+| Rules, privacy, about | `/en/rules`, `/en/privacy`, `/en/about`, linked from every footer and indexable. Their text lives in `src/views/pages.tsx`, not the locale file. | Long, partly legal text; a second language would get a person-written copy, never a machine translation |
+| Minimum age | 16, stated on the rules page; not asked or checked | Blueprint working default; **to confirm with legal advice** |
+| Contact | `CONTACT_EMAIL` (doublestrike.rar@gmail.com) on the rules, privacy and removed-request pages, which now say how to ask for a second look | DSA contact point and statement of reasons |
+| Turnstile disclosure | Described in general terms with a link to Cloudflare's Turnstile Privacy Addendum | Cloudflare's own page could not be fetched to confirm exactly what it stores; re-check before launch |
+| Workers AI disclosure | "Not kept after answering, not used for training" | Cloudflare's Workers AI data-usage page, 19 November 2026 |
+| Recovery window | "Up to 30 days" (7 on the free plan, 30 on Paid) | D1 Time Travel docs; the page states the longer figure so it stays true after the plan change |
+| Security headers | A strict Content-Security-Policy (this site and Turnstile only, no inline script or style), `nosniff`, `Referrer-Policy: same-origin`, `Permissions-Policy`, COOP, HSTS, `X-Frame-Options: DENY`, on Worker responses and, through `public/_headers`, on static files | `_headers` does not apply to Worker responses (Cloudflare docs), so both are needed; a test keeps them equal |
+| `noindex` | `X-Robots-Tag: noindex, nofollow` on `/mod`, `/api/`, `/healthz`, `/r/`, `/en/mine`, `/en/new`, `/en/r/`; the same paths in `robots.txt` | Private and moderator pages stay out of search |
+| Home-screen install | `manifest.webmanifest` with an original SVG icon | No images on the wall itself; the icon loads only as the favicon |
+| Database export | Weekly GitHub workflow, encrypted with `EXPORT_PASSPHRASE`, kept 7 days | The export holds request text; it must never sit unencrypted in GitHub |
+| Helpline check | Weekly with the self-test; an alert if it does not answer with a page; a person checks monthly | Blueprint |
+| Load tests | Script and staging instructions written; **not run**. The staging copy trusts `X-Test-Client-IP` only when `ENVIRONMENT=staging`. | The free plan's daily request allowance is shared by every Worker on the account; a 10-minute normal-peak run alone is about 80,000 requests. Run after moving to Workers Paid. |
+| Moderator guide | Written as a one-page draft. Its crisis section awaits approval with the support message. | Blueprint |
+| Not built | Serving the wall from cache when the database fails (needs the custom domain); the "more than half of the last 50 posts held" breaker | Both need M7 part 2 or real traffic |
+
+### Still blocking launch (M7)
+
+- Legal advice on the privacy checklist (legal basis, impact assessment, EU representative, DSA duties, minimum age).
+- The support message and the moderator guide's crisis section approved by someone with crisis-line experience.
+- A custom domain, edge caching and the Workers Paid plan, then the load tests.
+- An accessibility check at WCAG 2.2 AA and a second person running the project from the README.
+
 ## Proposed, awaiting the maintainer's decision
 
 None open. (P1 to P7 were decided or lapsed by 18 November; see the entries above.)

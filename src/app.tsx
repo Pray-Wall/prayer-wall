@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
+import { AboutPage, PrivacyPage, RulesPage } from "./views/pages";
+import { SECURITY_HEADERS, noindexPath } from "./lib/headers";
 import { Hono, type Context } from "hono";
 import type { Child } from "hono/jsx";
 import type { Database } from "./lib/database";
@@ -40,6 +42,8 @@ export type AppDeps = {
   thresholds: Thresholds;
   /** Link to the exact source of the running version (AGPL requirement). */
   sourceUrl: string;
+  /** The public contact address on the rules and privacy pages. */
+  contactEmail: string;
   /** The visitor's network address. Used only to compute the daily visitor hash; never stored or logged. */
   clientIp: (request: Request) => string;
   /**
@@ -74,6 +78,11 @@ const field = (form: Record<string, unknown>, name: string): string => {
 /** Builds the app from its dependencies; nothing here knows about Cloudflare. */
 export function createApp(deps: AppDeps) {
   const app = new Hono();
+  app.use("*", async (c, next) => {
+    await next();
+    for (const [k, v] of Object.entries(SECURITY_HEADERS)) if (!c.res.headers.has(k)) c.res.headers.set(k, v);
+    if (noindexPath(c.req.path)) c.res.headers.set("X-Robots-Tag", "noindex, nofollow");
+  });
   const now = deps.now ?? (() => Math.floor(Date.now() / 1000));
   const random = deps.random ?? Math.random;
 
@@ -304,6 +313,14 @@ export function createApp(deps: AppDeps) {
     );
   });
 
+  for (const [path, title, View] of [["rules", "Rules", RulesPage], ["privacy", "Privacy", PrivacyPage], ["about", "About", AboutPage]] as const) {
+    app.get(`/:lang/${path}`, async (c) => {
+      const l = await withLang(c);
+      if (l instanceof Response) return l;
+      return page(c, l.lang, l.t, <View lang={l.lang} contact={deps.contactEmail} sourceUrl={deps.sourceUrl} />, { title });
+    });
+  }
+
   app.get("/:lang/support", async (c) => {
     const l = await withLang(c);
     if (l instanceof Response) return l;
@@ -336,7 +353,7 @@ export function createApp(deps: AppDeps) {
     );
     if (result.state === "too_many") return page(c, lang, t, <MineEnter lang={lang} t={t} message="mine_too_many" />, { ...o, status: 429 });
     if (result.state === "not_found") return page(c, lang, t, <MineEnter lang={lang} t={t} message="mine_not_found" />, { ...o, status: 404 });
-    return page(c, lang, t, <MinePage lang={lang} t={t} result={result} origin={new URL(c.req.url).origin} />, o);
+    return page(c, lang, t, <MinePage lang={lang} t={t} result={result} origin={new URL(c.req.url).origin} contact={deps.contactEmail} />, o);
   });
 
   // ---- Shared links and "I prayed" ----

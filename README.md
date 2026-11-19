@@ -3,7 +3,7 @@
 One web page where anyone can leave a prayer request and anyone can pray for it.
 English only for now. No app, no account, no download.
 
-**Status:** early development. Milestone 5 is in place: a wall with sample data, a posting form, the
+**Status:** early development, preparing for launch (milestone 7). Milestone 5 is in place: a wall with sample data, a posting form, the
 author's private link, reports, a moderator queue, the "I prayed" button, and automatic moderation
 with a crisis flow. The classifier runs in shadow (`review_all`) until it passes its test, so the
 site is not open to the public yet.
