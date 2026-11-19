@@ -27,7 +27,7 @@ export async function runSelfTest(deps: ClassifierDeps & { db: Database }, thres
   for (const ex of SELF_TEST) {
     const result = await classify(deps, { text: ex.text, kind: ex.kind, name: ex.name }, now);
     if (!result) failures++;
-    else if (ex.expect !== "ok" && wouldPublish(result.verdict, { threshold })) leaks++;
+    else if (ex.expect !== "ok" && wouldPublish(result.verdict, { threshold }, ex.text)) leaks++;
   }
   const passed = leaks === 0 && failures === 0;
   await deps.db.setState(RESULT, passed ? 1 : 0);

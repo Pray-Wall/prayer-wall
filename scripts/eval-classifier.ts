@@ -49,7 +49,7 @@ for (const model of models) {
       rows.push({ ex, v: null, error: String(e) });
     }
   }
-  const pub = (r: (typeof rows)[number]) => wouldPublish(r.v, { threshold });
+  const pub = (r: (typeof rows)[number]) => wouldPublish(r.v, { threshold }, r.ex.text);
   const fine = rows.filter((r) => r.ex.expect === "ok");
   const rule = rows.filter((r) => r.ex.expect === "rule");
   const severe = rule.filter((r) => r.ex.severe);

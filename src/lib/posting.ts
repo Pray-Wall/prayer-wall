@@ -133,7 +133,7 @@ export async function submitRequest(deps: PostingDeps, input: PostInput, now: nu
   // 7. Decision. A wrong Turnstile secret is reported first, so the operator sees it whatever else applies.
   const threshold = deps.strict || deps.unattended ? deps.thresholds.strict : deps.thresholds.normal;
   const publish =
-    auto && bot === "pass" && !overSoftLimit && !duplicate && input.attempt !== "as_is" && wouldPublish(verdict, { threshold });
+    auto && bot === "pass" && !overSoftLimit && !duplicate && input.attempt !== "as_is" && wouldPublish(verdict, { threshold }, body);
   const holdReason: HoldReason | null = publish
     ? null
     : bot === "misconfigured" ? "bot_check_misconfigured"

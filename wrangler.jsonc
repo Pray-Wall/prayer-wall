@@ -25,7 +25,7 @@
     "ACCESS_AUD": "38e8fdf5cfbab9a447d775eb6ad183c27e9d5dbd055157448ee7188f12057194",
     // Classifier models tried in order, and the confidence needed to publish automatically.
     // Chosen with the classifier test (test/moderation-eval). Empty: every request is held.
-    "CLASSIFIER_MODELS": "",
+    "CLASSIFIER_MODELS": "@cf/meta/llama-3.3-70b-instruct-fp8-fast,@cf/meta/llama-3.1-8b-instruct",
     "CLASSIFIER_THRESHOLD": "0.9",
     "CLASSIFIER_STRICT_THRESHOLD": "0.97"
   },
