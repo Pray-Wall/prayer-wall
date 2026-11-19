@@ -53,6 +53,7 @@ export function testApp(options: { mode?: Mode; configured?: boolean; noModerati
         },
     thresholds: { normal: 0.9, strict: 0.97 },
     sourceUrl: "https://example.com/src",
+    contactEmail: "contact@example.org",
     clientIp: () => state.ip,
     clientCountry: () => state.country,
     now: () => state.now,

@@ -31,7 +31,7 @@ export interface ModeratorAuth {
 
 export type AlertKind =
   | "queue_waiting" | "unattended" | "report_breaker" | "test"
-  | "crisis" | "crisis_overdue" | "posting_burst" | "classifier_errors" | "model_unavailable" | "self_test";
+  | "crisis" | "crisis_overdue" | "posting_burst" | "classifier_errors" | "model_unavailable" | "self_test" | "helpline";
 
 export interface Alerter {
   /** Sends a short operational message to the moderators. It must never contain request text. */

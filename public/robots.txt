@@ -1,0 +1,8 @@
+User-agent: *
+Disallow: /mod
+Disallow: /api/
+Disallow: /healthz
+Disallow: /r/
+Disallow: /en/mine
+Disallow: /en/new
+Disallow: /en/r/

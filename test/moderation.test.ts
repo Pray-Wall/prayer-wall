@@ -192,7 +192,7 @@ describe("a moderator's decisions", () => {
     await act(app, id, "remove", { reason: "<script>" });
     expect((await request(id)).remove_reason).toBe("other");
     const mine = await (await app.post("/en/mine", { token: token! })).text();
-    expect(mine).toContain("<strong>This request was removed by a moderator.</strong></p>");
+    expect(mine).toContain("<strong>This request was removed by a moderator.</strong> To ask for a second look");
   });
 
   it("escalating keeps the item held and shows who asked", async () => {

@@ -1,0 +1,14 @@
+{
+  "name": "Prayer Wall",
+  "short_name": "Prayer Wall",
+  "description": "A place to ask for prayer and to pray for others.",
+  "start_url": "/en",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f5f8fc",
+  "theme_color": "#1f4e9c",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/icon-maskable.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}

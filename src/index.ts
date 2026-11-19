@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
+import { checkHelpline } from "./lib/helpline-check";
 import { D1DatabaseAdapter } from "./adapters/cloudflare/d1";
 import { CloudflareAccessAuth } from "./adapters/cloudflare/access";
 import { D1RateLimiter } from "./adapters/cloudflare/ratelimit";
@@ -35,6 +36,10 @@ export type Env = {
   AI?: { run(model: string, inputs: Record<string, unknown>): Promise<unknown> };
   /** Classifier models, comma-separated, tried in order (Revision 2.2, change 3). */
   CLASSIFIER_MODELS?: string;
+  /** Public contact address for the rules and privacy pages. */
+  CONTACT_EMAIL?: string;
+  /** "staging" on the load-test copy only. Never set in production. */
+  ENVIRONMENT?: string;
   /** Confidence needed to publish automatically, and the stricter one for `unattended` and after a failed self-test. */
   CLASSIFIER_THRESHOLD?: string;
   CLASSIFIER_STRICT_THRESHOLD?: string;
@@ -81,7 +86,8 @@ const alerter = (env: Env) =>
       : silentAlerter;
 
 /** Must match the second cron trigger in wrangler.jsonc. */
-export const WEEKLY = "17 3 * * 1";
+// Not exported: the runtime treats every export of the entry module as a handler.
+const WEEKLY = "17 3 * * 1";
 
 export default {
   fetch(request: Request, env: Env, ctx: ExecutionContext) {
@@ -96,8 +102,11 @@ export default {
       classifier: classifier(env),
       thresholds: thresholds(env),
       sourceUrl: sourceUrl(env),
-      // Cloudflare sets this header itself; a visitor cannot forge it.
-      clientIp: (req) => req.headers.get("CF-Connecting-IP") ?? "unknown",
+      contactEmail: env.CONTACT_EMAIL || "doublestrike.rar@gmail.com",
+      // Cloudflare sets this header itself; a visitor cannot forge it. Only the staging copy, for
+      // load tests, also trusts X-Test-Client-IP, so one machine can act as many visitors.
+      clientIp: (req) =>
+        (env.ENVIRONMENT === "staging" ? req.headers.get("X-Test-Client-IP") : null) ?? req.headers.get("CF-Connecting-IP") ?? "unknown",
       clientCountry: (req) => {
         const country = (req as Request<unknown, IncomingRequestCfProperties>).cf?.country;
         return typeof country === "string" ? country : null;
@@ -107,7 +116,7 @@ export default {
   },
 
   // Every 30 minutes: delete what has expired, then tell the moderators when the queue needs them.
-  // Once a week (Monday 03:17 UTC): the classifier self-test.
+  // Once a week (Monday 03:17 UTC): the classifier self-test and the helpline link check.
   async scheduled(controller: ScheduledController, env: Env) {
     const db = new D1DatabaseAdapter(env.DB);
     const limiter = new D1RateLimiter(env.DB);
@@ -115,6 +124,7 @@ export default {
     if (controller.cron === WEEKLY) {
       const c = classifier(env);
       if (c) await runSelfTest({ ...c, db, limiter, alerter: alerter(env) }, thresholds(env).normal, now);
+      await checkHelpline({ db, alerter: alerter(env), fetch: (input, init) => fetch(input, init) }, now);
       return;
     }
     await db.cleanUp(now);
